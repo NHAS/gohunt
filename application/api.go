@@ -1,11 +1,8 @@
 package application
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -38,15 +35,6 @@ func (a *Application) securityHeadersMiddleware(next http.Handler) http.Handler 
 
 		next.ServeHTTP(w, r)
 	})
-}
-
-// Helper functions
-func (a *Application) generateRandomString(length int) string {
-	b := make([]byte, length)
-	if _, err := io.ReadFull(rand.Reader, b); err != nil {
-		return ""
-	}
-	return hex.EncodeToString(b)
 }
 
 func (a *Application) getUserFromSubdomain(r *http.Request) (*models.User, error) {
@@ -122,11 +110,16 @@ func (a *Application) registerHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("New user successfully registered with username of %q and email of %q", user.Username, user.Email)
 
-	csrfToken := a.generateRandomString(32)
 	// Create session
-	a.store.StartSession(w, r, SessionEntry{
+	sessId := a.store.StartSession(w, r, SessionEntry{
 		UUID: newUser.UUID,
 	}, nil)
+
+	csrfToken, err := a.store.GenerateCSRFFromSession(sessId)
+	if err != nil {
+		http.Error(w, "Failed to generate csrf token", http.StatusInternalServerError)
+		return
+	}
 
 	a.writeJson(w, map[string]interface{}{
 		"success":    true,
@@ -135,15 +128,19 @@ func (a *Application) registerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
-
-	csrfToken := a.generateRandomString(32)
-
 	_, s := a.store.GetSessionFromRequest(r)
 	if s != nil {
 
 		var testUser models.User
 		err := a.db.Where("uuid = ?", s.UUID).First(&testUser).Error
 		if err == nil {
+
+			csrfToken, err := a.store.GenerateCSRFToken(r)
+			if err != nil {
+				http.Error(w, "Failed to generate csrf token", http.StatusInternalServerError)
+				return
+			}
+
 			res := struct {
 				Success   bool   `json:"success"`
 				CsrfToken string `json:"csrf_token"`
@@ -182,10 +179,16 @@ func (a *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create session
-
-	a.store.StartSession(w, r, SessionEntry{
+	sessId := a.store.StartSession(w, r, SessionEntry{
 		UUID: existingUser.UUID,
 	}, nil)
+
+	csrfToken, err := a.store.GenerateCSRFFromSession(sessId)
+	if err != nil {
+		log.Println("failed to generate csrf token")
+		http.Error(w, "Failed to generate CSRF token", http.StatusInternalServerError)
+		return
+	}
 
 	res := struct {
 		Success   bool   `json:"success"`
@@ -571,59 +574,59 @@ injection_key - This is the injection key which the XSS payload uses to identify
 
 Sending two correlation requests means that the previous injection_key entry will be replaced.
 */
-func (a *Application) injectionRequestHandler(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-	var injectionRequest models.InjectionRequest
+// func (a *Application) injectionRequestHandler(w http.ResponseWriter, r *http.Request) {
+// 	defer r.Body.Close()
+// 	var injectionRequest models.InjectionRequest
 
-	err := jsonDecoder(r.Body).Decode(&injectionRequest)
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
+// 	err := jsonDecoder(r.Body).Decode(&injectionRequest)
+// 	if err != nil {
+// 		http.NotFound(w, r)
+// 		return
+// 	}
 
-	newInjectionRequest := models.InjectionRequest{
-		InjectionKey: injectionRequest.InjectionKey,
-		Request:      injectionRequest.Request,
+// 	newInjectionRequest := models.InjectionRequest{
+// 		InjectionKey: injectionRequest.InjectionKey,
+// 		Request:      injectionRequest.Request,
 
-		OwnerCorrelationKey: injectionRequest.OwnerCorrelationKey,
-	}
+// 		OwnerCorrelationKey: injectionRequest.OwnerCorrelationKey,
+// 	}
 
-	var ownerUser models.User
-	if err := a.db.Where("owner_correlation_key = ?", newInjectionRequest.OwnerCorrelationKey).First(&ownerUser).Error; err != nil {
-		log.Println("owner_correlation_key not found: ", err)
-		a.writeJson(w, models.InjectionAPIResponse{
-			Success: false,
-			Message: "Invalid owner correlation key provided!",
-		})
-		return
-	}
+// 	var ownerUser models.User
+// 	if err := a.db.Where("owner_correlation_key = ?", newInjectionRequest.OwnerCorrelationKey).First(&ownerUser).Error; err != nil {
+// 		log.Println("owner_correlation_key not found: ", err)
+// 		a.writeJson(w, models.InjectionAPIResponse{
+// 			Success: false,
+// 			Message: "Invalid owner correlation key provided!",
+// 		})
+// 		return
+// 	}
 
-	log.Printf("User %q just sent us an injection attempt with an ID of %q", ownerUser.Username, injectionRequest.InjectionKey)
+// 	log.Printf("User %q just sent us an injection attempt with an ID of %q", ownerUser.Username, injectionRequest.InjectionKey)
 
-	if err := a.db.Delete(models.InjectionRequest{}, "injection_key = ? AND owner_correlation_key = ?", injectionRequest.InjectionKey, ownerUser.OwnerCorrelationKey); err != nil {
-		log.Println("failed to delete old entries: ", err)
-		a.writeJson(w, models.InjectionAPIResponse{
-			Success: false,
-			Message: "Failed to delete previous entries",
-		})
-		return
-	}
+// 	if err := a.db.Delete(models.InjectionRequest{}, "injection_key = ? AND owner_correlation_key = ?", injectionRequest.InjectionKey, ownerUser.OwnerCorrelationKey); err != nil {
+// 		log.Println("failed to delete old entries: ", err)
+// 		a.writeJson(w, models.InjectionAPIResponse{
+// 			Success: false,
+// 			Message: "Failed to delete previous entries",
+// 		})
+// 		return
+// 	}
 
-	if err := a.db.Create(&newInjectionRequest).Error; err != nil {
-		log.Println("failed to create new entries: ", err)
-		a.writeJson(w, models.InjectionAPIResponse{
-			Success: false,
-			Message: "Failed to create new entries",
-		})
+// 	if err := a.db.Create(&newInjectionRequest).Error; err != nil {
+// 		log.Println("failed to create new entries: ", err)
+// 		a.writeJson(w, models.InjectionAPIResponse{
+// 			Success: false,
+// 			Message: "Failed to create new entries",
+// 		})
 
-		return
-	}
+// 		return
+// 	}
 
-	a.writeJson(w, models.InjectionAPIResponse{
-		Success: true,
-		Message: "Injection request successfully recorded!",
-	})
-}
+// 	a.writeJson(w, models.InjectionAPIResponse{
+// 		Success: true,
+// 		Message: "Injection request successfully recorded!",
+// 	})
+// }
 
 func (a *Application) healthHandler(w http.ResponseWriter, r *http.Request) {
 

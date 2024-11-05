@@ -61,13 +61,9 @@ function api_request( method, path, data, callback ) {
             hide_loading_bar();
 
             let errorText = "An unknown error occured"
-            if (XMLHttpRequest.readyState == 4) {
+            if (XMLHttpRequest.readyState == 4 || XMLHttpRequest.readyState == 0) {
                 // HTTP error (can be checked by XMLHttpRequest.status and XMLHttpRequest.statusText)
                 errorText = XMLHttpRequest.statusText
-            }
-            else if (XMLHttpRequest.readyState == 0) {
-                // Network error (i.e. connection refused, access denied due to CORS, etc.)
-                errorText = "Network Error"
             }
 
             callback({"error":errorText});

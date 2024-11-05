@@ -10,7 +10,6 @@ import (
 // Config holds the application settings
 type Config struct {
 	Domain        string `yaml:"domain"`
-	CookieSecret  string `yaml:"cookie_secret"`
 	SMTPHost      string `yaml:"smtp_host"`
 	SMTPUsername  string `yaml:"smtp_username"`
 	SMTPPassword  string `yaml:"smtp_password"`

@@ -68,16 +68,16 @@ func (a *Application) Run() error {
 
 	// Authorisation required API routes
 	authorizedPages := http.NewServeMux()
-	authorizedPages.HandleFunc("GET /api/collected_pages", a.getCollectedPagesHandler)
-	authorizedPages.HandleFunc("DELETE /api/delete_injection", a.deleteInjectionHandler)
-	authorizedPages.HandleFunc("DELETE /api/delete_collected_page", a.deleteCollectedPageHandler)
-	authorizedPages.HandleFunc("GET /api/user", a.userInformationHandler)
-	authorizedPages.HandleFunc("PUT /api/user", a.editUserInformationHandler)
-	authorizedPages.HandleFunc("GET /api/payloadfires", a.getXSSPayloadFiresHandler)
-	authorizedPages.HandleFunc("POST /api/resend_injection_email", a.resendInjectionEmailHandler)
-	authorizedPages.HandleFunc("GET /api/logout", a.logoutHandler)
+	authorizedPages.HandleFunc("GET /collected_pages", a.getCollectedPagesHandler)
+	authorizedPages.HandleFunc("DELETE /delete_injection", a.deleteInjectionHandler)
+	authorizedPages.HandleFunc("DELETE /delete_collected_page", a.deleteCollectedPageHandler)
+	authorizedPages.HandleFunc("GET /user", a.userInformationHandler)
+	authorizedPages.HandleFunc("PUT /user", a.editUserInformationHandler)
+	authorizedPages.HandleFunc("GET /payloadfires", a.getXSSPayloadFiresHandler)
+	authorizedPages.HandleFunc("POST /resend_injection_email", a.resendInjectionEmailHandler)
+	authorizedPages.HandleFunc("GET /logout", a.logoutHandler)
 
-	r.Handle("/api", a.store.AuthorisationChecks(authorizedPages,
+	r.Handle("/api/", http.StripPrefix("/api", a.store.AuthorisationChecks(authorizedPages,
 		func(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/app", http.StatusSeeOther)
 		},
@@ -90,7 +90,7 @@ func (a *Application) Run() error {
 
 			return true
 
-		}))
+		})))
 
 	// Callback routes
 	//r.HandleFunc("POST /api/record_injection", a.injectionRequestHandler)
