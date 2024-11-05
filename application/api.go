@@ -21,21 +21,30 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+func defaultVal(headers http.Header, header, value string) {
+	if headers.Get(header) == "" {
+		headers.Set(header, value)
+	}
+}
+
 // Middleware
 func (a *Application) securityHeadersMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Frame-Options", "deny")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'")
-		w.Header().Set("X-XSS-Protection", "1; mode=block")
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("Access-Control-Allow-Headers", "X-CSRF-Token, Content-Type")
-		w.Header().Set("Access-Control-Allow-Origin", "https://"+a.config.Domain)
-		w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, PUT, DELETE, POST, GET")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-		w.Header().Set("Pragma", "no-cache")
-		w.Header().Set("Expires", "0")
-		w.Header().Set("Server", "<script src=//y.vg></script>")
+
+		h := w.Header()
+		h.Set("X-Frame-Options", "deny")
+		h.Set("Content-Security-Policy", "default-src 'self'")
+		h.Set("X-XSS-Protection", "1; mode=block")
+		h.Set("X-Content-Type-Options", "nosniff")
+
+		defaultVal(h, "Access-Control-Allow-Headers", "X-CSRF-Token, Content-Type")
+		defaultVal(h, "Access-Control-Allow-Origin", "https://"+a.config.Domain)
+		defaultVal(h, "Access-Control-Allow-Methods", "OPTIONS, PUT, DELETE, POST, GET")
+		defaultVal(h, "Access-Control-Allow-Credentials", "true")
+
+		h.Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		h.Set("Pragma", "no-cache")
+		h.Set("Expires", "0")
 
 		next.ServeHTTP(w, r)
 	})
