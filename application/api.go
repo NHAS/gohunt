@@ -721,7 +721,22 @@ Sending two correlation requests means that the previous injection_key entry wil
 
 func (a *Application) healthHandler(w http.ResponseWriter, r *http.Request) {
 
-	//todo test db
+	m := models.InjectionRequest{InjectionKey: "test"}
+	if err := a.db.Clauses(clause.Returning{}).Create(&m).Error; err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Database error"))
+		log.Println("Creating test injection for db healthcheck failed: ", err)
+		return
+	}
+
+	if err := a.db.Unscoped().Delete(&m).Error; err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Database error"))
+		log.Println("Deleting test injection failed: ", err)
+
+		return
+	}
+
 	w.Write([]byte("GOHUNTER_OK"))
 }
 
