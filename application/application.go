@@ -24,16 +24,14 @@ type SessionEntry struct {
 type Application struct {
 	config config.Config
 
-	store               *session.SessionStore[SessionEntry]
-	db                  *gorm.DB
-	forbiddenSubdomains []string
+	store *session.SessionStore[SessionEntry]
+	db    *gorm.DB
 }
 
 func New(c config.Config) (*Application, error) {
 
 	var newApplication = Application{
-		config:              c,
-		forbiddenSubdomains: []string{"www", "api"},
+		config: c,
 	}
 
 	var err error

@@ -78,14 +78,6 @@ func (a *Application) registerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if domain exists or is forbidden
-	for _, forbidden := range a.forbiddenSubdomains {
-		if userData.Domain == forbidden {
-			http.Error(w, "Domain not allowed", http.StatusBadRequest)
-			return
-		}
-	}
-
 	if err := a.db.Where("domain = ?", userData.Domain).First(&existingUser).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
 		http.Error(w, "Domain already registered", http.StatusBadRequest)
 		return
