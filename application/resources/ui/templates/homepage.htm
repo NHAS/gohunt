@@ -1,0 +1,21 @@
+{{block "header" .}}{{end}}
+<body>
+    {{block "navbar" .}}{{end}}
+    <div id="homepage_jumbotron" class="jumbotron">
+        <h1 class="if_this_is_how_text">If this is how you hunt for Cross-Site Scripting (XSS)...</h1>
+        <div class="jumbotron-photo">
+            <video id="autoplay_homepage_video" loop="true" autoplay="true">
+                <source src="/static/video/xss_the_wrong_way.mp4" type="video/mp4" />
+                <source src="/static/video/xss_the_wrong_way.webm" type="video/webm" />
+            </video>
+        </div>
+        <div class="jumbotron-contents">
+            <h1>...you may be missing the <b>most critical</b> vulnerabilities!</h1>
+            <hr />
+            <i><h1>GoHunt is a better way to do Cross-site Scripting.</h1></i>
+            <h2><a href="/features">Learn more about how GoHunt can help you find even blind XSS...</a></h2>
+        </div>
+    </div>
+    <link rel="stylesheet" type="text/css" href="/static/css/homepage.css">
+</body>
+{{block "footer" .}}{{end}}

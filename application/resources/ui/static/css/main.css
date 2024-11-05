@@ -1,0 +1,26 @@
+.menu {
+    height: 100%;
+}
+
+body {
+	background-image: url("/static/img/bg.png");
+	background-repeat: repeat;
+    padding-top: 50px;
+}
+
+.main-content {
+    margin-top: 40px;
+    text-align: center;
+}
+
+.loading_bar {
+    width: 100%;
+}
+
+.progress-bar {
+    width: 100%;
+}
+
+.panel-body {
+    margin-bottom: 20px;
+}
