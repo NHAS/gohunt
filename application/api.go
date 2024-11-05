@@ -1,9 +1,11 @@
 package application
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -467,10 +469,16 @@ func (a *Application) editUserInformationHandler(w http.ResponseWriter, r *http.
 	a.writeJson(w, response)
 }
 
+func (a *Application) sendJSPGPMail(to string, pgpMessage string) {
+
+	// Confedential mode is fine with sending a pgp encrypted message
+	go a.sendMail(to, "[Go Hunt] XSS Payload Message (PGP Encrypted)", "text/plain", pgpMessage)
+}
+
 func (a *Application) sendJSInjectionMail(to string, injection models.Injection) {
 
 	if a.config.Notification.Confidential {
-		go a.sendMail(to, "[XSS Hunter] XSS Payload Fired", "An XSS fired, you should check it out on https://"+a.config.Domain+" (confidential mode is on, no details will be reported via notification)")
+		go a.sendMail(to, "[Go Hunt] XSS Payload Fired", "An XSS fired, you should check it out on https://"+a.config.Domain+" (confidential mode is on, no details will be reported via notification)")
 		return
 	}
 
@@ -480,7 +488,7 @@ func (a *Application) sendJSInjectionMail(to string, injection models.Injection)
 		return
 	}
 
-	go a.sendMail(to, fmt.Sprintf("[XSS Hunter] XSS Payload Fired On %q", injection.VulnerablePage), "text/html", content)
+	go a.sendMail(to, fmt.Sprintf("[Go Hunt] XSS Payload Fired On %q", injection.VulnerablePage), "text/html", content)
 }
 
 func (a *Application) sendMail(to, subject, contentType string, content ...string) {
@@ -707,18 +715,32 @@ func (a *Application) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, HEAD, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "X-Requested-With")
+
+	if r.Method == http.MethodOptions {
+		a.writeJson(w, struct{}{})
+		return
+	}
+
 	ownerUser, err := a.getUserFromSubdomain(r)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
 
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, HEAD, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "X-Requested-With")
+	contents, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Println("failed to read all contents of new JS callback: ", err)
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
 
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusOK)
+	if bytes.HasPrefix(contents, []byte("-----BEGIN PGP MESSAGE-----")) && ownerUser.EmailEnabled && a.config.Notification.SMTP.Enabled {
+		log.Printf("User %q just got a PGP encrypted XSS callback, passing it along.", ownerUser.Username)
+		a.sendJSPGPMail(ownerUser.Email, string(contents))
+		a.writeJson(w, struct{}{})
 		return
 	}
 
@@ -726,7 +748,8 @@ func (a *Application) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		models.Injection
 		InjectionKey string `json:"injection_key"`
 	}
-	err = json.NewDecoder(r.Body).Decode(&newInjection)
+
+	err = json.Unmarshal(contents, &newInjection)
 	if err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
