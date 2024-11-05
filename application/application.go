@@ -9,6 +9,7 @@ import (
 	"github.com/NHAS/gohunt/application/models"
 	"github.com/NHAS/gohunt/application/resources/ui"
 	"github.com/NHAS/gohunt/config"
+	"github.com/gorilla/mux"
 
 	"github.com/NHAS/session"
 	"github.com/google/uuid"
@@ -56,18 +57,34 @@ func New(c config.Config) (*Application, error) {
 
 func (a *Application) Run() error {
 
-	r := http.NewServeMux()
+	r := mux.NewRouter()
+
+	collectionDomains := r.Host("{subdomain:.*}." + a.config.Domain).Subrouter()
+
+	// Handles both post and options
+	collectionDomains.HandleFunc("/js_callback", a.callbackHandler)
+	collectionDomains.HandleFunc("/page_callback", a.collectPageHandler)
 
 	// Public js collection routes
-	r.HandleFunc("/", a.probe)
+	collectionDomains.HandleFunc("/", a.probe)
+
+	managementDomain := r.Host(a.config.Domain).Subrouter()
+
+	// UI Routes
+	managementDomain.HandleFunc("/", a.homepage).Methods("GET")
+	managementDomain.HandleFunc("/app", a.app).Methods("GET")
+	managementDomain.HandleFunc("/features", a.features).Methods("GET")
+	managementDomain.HandleFunc("/signup", a.signup).Methods("GET")
+	managementDomain.HandleFunc("/contact", a.contact).Methods("GET")
+	managementDomain.PathPrefix("/static/").HandlerFunc(ui.Static).Methods("GET")
 
 	// Public API routes
-	r.HandleFunc("POST /api/register", a.registerHandler)
-	r.HandleFunc("POST /api/login", a.loginHandler)
-	r.HandleFunc("POST /api/contactus", a.contactUsHandler)
+	managementDomain.HandleFunc("/api/register", a.registerHandler).Methods("POST")
+	managementDomain.HandleFunc("/api/login", a.loginHandler).Methods("POST")
+	managementDomain.HandleFunc("/api/contactus", a.contactUsHandler).Methods("POST")
 
 	// Health check
-	r.HandleFunc("GET /health", a.healthHandler)
+	managementDomain.HandleFunc("/health", a.healthHandler).Methods("GET")
 
 	// Authorisation required API routes
 	authorizedPages := http.NewServeMux()
@@ -80,7 +97,7 @@ func (a *Application) Run() error {
 	authorizedPages.HandleFunc("POST /resend_injection_email", a.resendInjectionEmailHandler)
 	authorizedPages.HandleFunc("GET /logout", a.logoutHandler)
 
-	r.Handle("/api/", http.StripPrefix("/api", a.store.AuthorisationChecks(authorizedPages,
+	managementDomain.PathPrefix("/api/").Handler(http.StripPrefix("/api", a.store.AuthorisationChecks(authorizedPages,
 		func(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/app", http.StatusSeeOther)
 		},
@@ -97,18 +114,6 @@ func (a *Application) Run() error {
 
 	// Callback routes
 	//r.HandleFunc("POST /api/record_injection", a.injectionRequestHandler)
-
-	// Handles both post and options
-	r.HandleFunc("/js_callback", a.callbackHandler)
-	r.HandleFunc("/page_callback", a.collectPageHandler)
-
-	// UI Routes
-	r.HandleFunc(a.config.Domain+"/", a.homepage)
-	r.HandleFunc("GET /app", a.app)
-	r.HandleFunc("GET /features", a.features)
-	r.HandleFunc("GET /signup", a.signup)
-	r.HandleFunc("GET /contact", a.contact)
-	r.HandleFunc("GET /static/", ui.Static)
 
 	srv := &http.Server{
 		Handler:      a.securityHeadersMiddleware(r),
