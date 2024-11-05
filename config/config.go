@@ -10,13 +10,22 @@ import (
 // Config holds the application settings
 type Config struct {
 	Domain        string `yaml:"domain"`
-	SMTPHost      string `yaml:"smtp_host"`
-	SMTPUsername  string `yaml:"smtp_username"`
-	SMTPPassword  string `yaml:"smtp_password"`
-	SMTPFromEmail string `yaml:"smtp_from_email"`
 	AbuseEmail    string `yaml:"abuse_email"`
 	ListenAddress string `yaml:"listen_address"`
-	UploadPath    string `yaml:"upload_directory"`
+
+	Notification struct {
+		SMTP struct {
+			Enabled bool `yaml:"enabled"`
+
+			Host      string `yaml:"host"`
+			Port      int    `yaml:"port"`
+			Username  string `yaml:"username"`
+			Password  string `yaml:"password"`
+			FromEmail string `yaml:"from"`
+		}
+
+		Confidential bool `"yaml:confidential"`
+	}
 
 	Database struct {
 		Host     string `yaml:"host"`

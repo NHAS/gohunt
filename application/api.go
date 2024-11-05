@@ -11,8 +11,10 @@ import (
 	"time"
 
 	"github.com/NHAS/gohunt/application/models"
+	"github.com/NHAS/gohunt/application/resources/notifications"
 
 	"golang.org/x/crypto/bcrypt"
+	gomail "gopkg.in/mail.v2"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -465,6 +467,45 @@ func (a *Application) editUserInformationHandler(w http.ResponseWriter, r *http.
 	a.writeJson(w, response)
 }
 
+func (a *Application) sendJSInjectionMail(to string, injection models.Injection) {
+
+	if a.config.Notification.Confidential {
+		go a.sendMail(to, "[XSS Hunter] XSS Payload Fired", "An XSS fired, you should check it out on https://"+a.config.Domain+" (confidential mode is on, no details will be reported via notification)")
+		return
+	}
+
+	content, err := notifications.Render(nil, injection, "xss_email_template.htm")
+	if err != nil {
+		log.Println("Failed to render xss template for sending mail: ", err)
+		return
+	}
+
+	go a.sendMail(to, fmt.Sprintf("[XSS Hunter] XSS Payload Fired On %q", injection.VulnerablePage), "text/html", content)
+}
+
+func (a *Application) sendMail(to, subject, contentType string, content ...string) {
+	// Create a new message
+	message := gomail.NewMessage()
+
+	// Set email headers
+	message.SetHeader("From", a.config.Notification.SMTP.FromEmail)
+	message.SetHeader("To", to)
+	message.SetHeader("Subject", subject)
+
+	// Set email body
+	message.SetBody(contentType, strings.Join(content, "\n"))
+
+	// Set up the SMTP dialer
+	dialer := gomail.NewDialer(a.config.Notification.SMTP.Host, a.config.Notification.SMTP.Port, a.config.Notification.SMTP.Username, a.config.Notification.SMTP.Password)
+
+	// Send the email
+	if err := dialer.DialAndSend(message); err != nil {
+		log.Println("failed to send email: ", err)
+	} else {
+		fmt.Println("Email notification sent successfully!")
+	}
+}
+
 /*
 getXSSPayloadFiresHandler is the endpoint for querying for XSS payload fire data.
 
@@ -528,9 +569,19 @@ func (a *Application) contactUsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println("Contact form was used")
+	//TODO rate limit and recaptcha this
 
-	// TODO mail
+	sendMail := a.config.Notification.SMTP.Enabled && a.config.AbuseEmail != ""
+	log.Println("Contact form was used, sending email: ", sendMail)
+
+	if sendMail {
+
+		message := fmt.Sprintf("Name: %q\n", contact.Name)
+		message += fmt.Sprintf("Email: %q\n", contact.Email)
+		message += fmt.Sprintf("Body: %q\n", contact.Body)
+
+		go a.sendMail(a.config.AbuseEmail, "GoHunt Contact Form Submission", message, "text/plain")
+	}
 
 	models.Boolean(w, true)
 }
@@ -558,7 +609,10 @@ func (a *Application) resendInjectionEmailHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	//TODO mail
+	if user.EmailEnabled && a.config.Notification.SMTP.Enabled {
+		a.sendJSInjectionMail(user.Email, userInjection)
+	}
+
 	log.Printf("User just requested to resend the injection record email for URI: %q", userInjection.VulnerablePage)
 	models.Message(w, true, "Email sent!")
 }
@@ -696,6 +750,11 @@ func (a *Application) callbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("User %q just got an XSS callback for URI %q", ownerUser.Username, "")
+
+	if ownerUser.EmailEnabled && a.config.Notification.SMTP.Enabled {
+		// Runs in its own goroutine
+		a.sendJSInjectionMail(ownerUser.Email, newInjection.Injection)
+	}
 
 	a.writeJson(w, struct{}{})
 }
