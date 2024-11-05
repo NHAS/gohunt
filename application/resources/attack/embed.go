@@ -17,7 +17,7 @@ var (
 	pgpTemplate []byte
 )
 
-func NewProbe(domain string, user models.User) []byte {
+func NewProbe(domain, urlPath string, user models.User) []byte {
 	newProbe := bytes.ReplaceAll(embedProbe, []byte("[HOST_URL]"), []byte("https://"+domain))
 
 	pgpKey, _ := json.Marshal(user.PGPKey)
@@ -35,8 +35,8 @@ func NewProbe(domain string, user models.User) []byte {
 	}
 	newProbe = bytes.ReplaceAll(newProbe, []byte("[TEMPLATE_REPLACE_ME]"), []byte(pgpTemplateReplace))
 
-	parts := strings.Split(path, "/")
-	if path != "/" && len(parts) > 1 {
+	parts := strings.Split(urlPath, "/")
+	if urlPath != "/" && len(parts) > 1 {
 		newProbe = bytes.ReplaceAll(newProbe, []byte("[PROBE_ID]"), []byte(parts[1]))
 	}
 

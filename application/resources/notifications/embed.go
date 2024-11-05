@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	//go:embed *htm *md *txt
+	//go:embed *htm *md
 	templates embed.FS
 )
 
