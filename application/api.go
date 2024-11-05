@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -61,25 +62,37 @@ func (a *Application) getUserFromSubdomain(r *http.Request) (*models.User, error
 	return &user, nil
 }
 
+var domainRegex = regexp.MustCompile(`^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$`)
+
 // Handlers
 func (a *Application) registerHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var userData models.CreateUserRequest
 	if err := jsonDecoder(r.Body).Decode(&userData); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		models.Message(w, false, "Invalid body")
+		return
+	}
+
+	if userData.Domain == "" {
+		models.Message(w, false, "Domain is empty")
+		return
+	}
+
+	if !domainRegex.MatchString(userData.Domain) {
+		models.Message(w, false, "Invalid domain, only alphanumb and -, .")
 		return
 	}
 
 	// Check if username exists
 	var existingUser models.User
 	if err := a.db.Where("username = ?", userData.Username).First(&existingUser).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
-		http.Error(w, "Username already exists", http.StatusBadRequest)
+		models.Message(w, false, "Username already exists")
 		return
 	}
 
 	if err := a.db.Where("domain = ?", userData.Domain).First(&existingUser).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
-		http.Error(w, "Domain already registered", http.StatusBadRequest)
+		models.Message(w, false, "Domain already registered")
 		return
 	}
 
@@ -96,20 +109,23 @@ func (a *Application) registerHandler(w http.ResponseWriter, r *http.Request) {
 
 	b, err := bcrypt.GenerateFromPassword([]byte(userData.Password), 10)
 	if err != nil {
-		http.Error(w, "Server Error", http.StatusInternalServerError)
+		models.Message(w, false, "Server Error")
 		return
 	}
 
 	user.Password = string(b)
 
 	if err := a.db.Create(&user).Error; err != nil {
-		http.Error(w, "Error creating user", http.StatusInternalServerError)
+		log.Println("failed to save user in database: ", err)
+		models.Message(w, false, "Server Error")
 		return
 	}
 
 	var newUser models.User
 	if err := a.db.Where("username = ?", userData.Username).First(&newUser).Error; err != nil {
 		http.Error(w, "Error creating user", http.StatusInternalServerError)
+		models.Message(w, false, "Error fetching new user")
+
 		return
 	}
 
@@ -122,7 +138,7 @@ func (a *Application) registerHandler(w http.ResponseWriter, r *http.Request) {
 
 	csrfToken, err := a.store.GenerateCSRFFromSession(sessId)
 	if err != nil {
-		http.Error(w, "Failed to generate csrf token", http.StatusInternalServerError)
+		models.Message(w, false, "Failed to generate CSRF token")
 		return
 	}
 
