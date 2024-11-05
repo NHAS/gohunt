@@ -24,7 +24,7 @@ type Config struct {
 			FromEmail string `yaml:"from"`
 		}
 
-		Confidential bool `"yaml:confidential"`
+		Confidential bool `yaml:"confidential"`
 	}
 
 	Database struct {
