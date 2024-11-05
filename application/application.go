@@ -58,6 +58,9 @@ func (a *Application) Run() error {
 
 	r := http.NewServeMux()
 
+	// Public js collection routes
+	r.HandleFunc("/", a.probe)
+
 	// Public API routes
 	r.HandleFunc("POST /api/register", a.registerHandler)
 	r.HandleFunc("POST /api/login", a.loginHandler)
@@ -100,7 +103,7 @@ func (a *Application) Run() error {
 	r.HandleFunc("/page_callback", a.collectPageHandler)
 
 	// UI Routes
-	r.HandleFunc("/", a.homepage)
+	r.HandleFunc(a.config.Domain+"/", a.homepage)
 	r.HandleFunc("GET /app", a.app)
 	r.HandleFunc("GET /features", a.features)
 	r.HandleFunc("GET /signup", a.signup)
