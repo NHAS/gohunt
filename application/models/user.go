@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"io"
 
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -15,6 +16,12 @@ type User struct {
 	UserDTO
 
 	Password string `gorm:"not null"`
+}
+
+// Returns true when bcrypt compare returns no error
+func (u *User) ComparePassword(password string) bool {
+	// Compare the stored hashed password with the provided password
+	return bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)) == nil
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
@@ -60,9 +67,11 @@ type CreateUserRequest struct {
 }
 
 type EditUserRequest struct {
-	FullName            string   `json:"full_name"`
-	Email               string   `gorm:"not null" json:"email"`
-	Password            string   `json:"password"`
+	FullName        string `json:"full_name"`
+	Email           string `gorm:"not null" json:"email"`
+	Password        string `json:"password"`
+	CurrentPassword string `json:"current_password"`
+
 	EmailEnabled        bool     `json:"email_enabled"`
 	ChainloadURI        string   `json:"chainload_uri"`
 	PageCollectionPaths []string `gorm:"-" json:"page_collection_paths_list"`

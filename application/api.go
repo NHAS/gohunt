@@ -3,9 +3,9 @@ package application
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -171,8 +171,7 @@ func (a *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Compare the stored hashed password with the provided password
-	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(loginRequest.Password))
-	if err != nil {
+	if !existingUser.ComparePassword(loginRequest.Password) {
 		log.Printf("Invalid password supplied for %q", loginRequest.Username)
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
@@ -375,17 +374,14 @@ func (a *Application) deleteInjectionHandler(w http.ResponseWriter, r *http.Requ
 	if err := a.db.Unscoped().Clauses(clause.Returning{}).Where("owner_id = ? AND uuid = ?", user.UUID, toDelete.UUID).Delete(&injection).Error; err != nil {
 		log.Println("failed", err)
 		http.Error(w, "Failed", http.StatusBadRequest)
+
+		models.Message(w, false, "Not found")
 		return
 	}
 
 	log.Printf("User deleted injection record with an id of %q", toDelete.UUID)
 
-	os.Remove(injection.Screenshot)
-
-	a.writeJson(w, models.InjectionAPIResponse{
-		Success: true,
-		Message: "Injection deleted!",
-	})
+	models.Message(w, true, "Injection deleted!")
 }
 
 func (a *Application) userInformationHandler(w http.ResponseWriter, r *http.Request) {
@@ -410,21 +406,43 @@ func (a *Application) editUserInformationHandler(w http.ResponseWriter, r *http.
 	var editReq models.EditUserRequest
 	err := jsonDecoder(r.Body).Decode(&editReq)
 	if err != nil {
-		a.writeJson(w, struct{ Success bool }{Success: false})
+		log.Println("Failed to decode body: ", err)
+		models.Boolean(w, false)
+		return
+	}
+
+	if editReq.CurrentPassword == "" {
+		log.Printf("User  %q did not enter in current password to edit settings ", user.Username)
+		models.Message(w, false, "No current password supplied")
+		return
+	}
+
+	if !user.ComparePassword(editReq.CurrentPassword) {
+		log.Printf("User %q entered incorrect current password to edit settings", user.Username)
+		models.Message(w, false, "Incorrect current password")
 		return
 	}
 
 	user.FullName = editReq.FullName
 	user.Email = editReq.Email
 	user.Password = editReq.Password
+	if editReq.Password != "" {
+		b, err := bcrypt.GenerateFromPassword([]byte(editReq.Password), 10)
+		if err != nil {
+			http.Error(w, "Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		user.Password = string(b)
+	}
 	user.EmailEnabled = editReq.EmailEnabled
 	user.ChainloadURI = editReq.ChainloadURI
 	user.PageCollectionPaths = editReq.PageCollectionPaths
 	user.PGPKey = editReq.PGPKey
 
-	if err := a.db.Save(user).Error; err != nil {
+	if err := a.db.Updates(user).Error; err != nil {
 		log.Println("failed to save updated user object: ", err)
-		http.Error(w, "Server Error", http.StatusInternalServerError)
+		models.Message(w, false, fmt.Sprintf("Failed to save user: %s", err))
 		return
 	}
 
@@ -438,7 +456,7 @@ func (a *Application) editUserInformationHandler(w http.ResponseWriter, r *http.
 
 	response := struct {
 		models.UserDTO
-		Success bool
+		Success bool `json:"success"`
 	}{
 		UserDTO: user.UserDTO,
 		Success: true,
@@ -479,14 +497,14 @@ func (a *Application) getXSSPayloadFiresHandler(w http.ResponseWriter, r *http.R
 	var injections []models.Injection
 	if err := a.db.Where("owner_id = ?", user.UUID).Order("injection_timestamp desc").Limit(limit).Offset(offset).Find(&injections).Error; err != nil {
 		log.Println("failed get injections", err)
-		http.Error(w, "Failed", http.StatusBadRequest)
+		models.Boolean(w, false)
 		return
 	}
 
 	var count int64
 	if err := a.db.Model(&models.Injection{}).Where("owner_id = ?", user.UUID).Count(&count).Error; err != nil {
 		log.Println("failed to count injections", err)
-		http.Error(w, "Failed", http.StatusBadRequest)
+		models.Boolean(w, false)
 		return
 	}
 
@@ -514,7 +532,7 @@ func (a *Application) contactUsHandler(w http.ResponseWriter, r *http.Request) {
 
 	// TODO mail
 
-	a.writeJson(w, struct{ Success bool }{Success: true})
+	models.Boolean(w, true)
 }
 
 func (a *Application) resendInjectionEmailHandler(w http.ResponseWriter, r *http.Request) {
@@ -529,26 +547,20 @@ func (a *Application) resendInjectionEmailHandler(w http.ResponseWriter, r *http
 	var i models.InjectionEmailRequest
 	err := jsonDecoder(r.Body).Decode(&i)
 	if err != nil {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		models.Boolean(w, false)
 		return
 	}
 
 	var userInjection models.Injection
 	if err := a.db.Where("owner_id = ? AND uuid = ?", user.UUID, i.UUID).First(&userInjection).Error; err != nil {
 		log.Println("failed", err)
-		http.Error(w, "Failed", http.StatusBadRequest)
+		models.Boolean(w, false)
 		return
 	}
 
 	//TODO mail
-
 	log.Printf("User just requested to resend the injection record email for URI: %q", userInjection.VulnerablePage)
-
-	a.writeJson(w, models.InjectionAPIResponse{
-		Success: true,
-		Message: "Email sent!",
-	})
-
+	models.Message(w, true, "Email sent!")
 }
 
 func (a *Application) logoutHandler(w http.ResponseWriter, r *http.Request) {

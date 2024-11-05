@@ -25,7 +25,7 @@ function register_account() {
             localStorage.setItem( "CSRF_TOKEN", CSRF_TOKEN );
             window.location = "/app";
         } else {
-            $( ".bad_signup_text_fields" ).text( response["invalid_fields"] );
+            $( ".bad_signup_text_fields" ).text( response["message"] );
             $( ".bad_signup_dialogue" ).fadeIn();
             setTimeout( function() {
                 $( ".bad_signup_dialogue" ).fadeOut();

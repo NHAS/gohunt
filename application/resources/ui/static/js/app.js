@@ -401,24 +401,27 @@ function create_paginator_widget( count, offset, total, target_div_selector, pag
 }
 
 function update_account_setings() {
-    USER.username = $( "#username" ).val();
-    USER.full_name = $( "#full_name" ).val();
-    USER.pgp_key = $( "#pgp-key" ).val();
-    USER.email = $( "#email" ).val();
-    USER.page_collection_paths_list = $( "#page_collection_paths_list" ).val();
-    USER.chainload_uri = $( "#chainload_uri" ).val();
-    USER.owner_correlation_key = $( "#owner_correlation_key" ).val();
-    USER.email_enabled = $('#email_enabled').is(':checked');
-    var temp_pass = $( "#settings_password" ).val();
-
-    if( temp_pass != "" ) {
-        USER.password = temp_pass;
+    let userChange = {
+        full_name: $( "#full_name" ).val(),
+        pgp_key: $( "#pgp-key" ).val(),
+        email:  $( "#email" ).val(),
+        page_collection_paths_list: $( "#page_collection_paths_list" ).val().split(/\r?\n/),
+        chainload_uri: $( "#chainload_uri" ).val(),
+        email_enabled: $('#email_enabled').is(':checked'),
+        password: $( "#settings_password" ).val(),
+        current_password: $( "#settings_current_password" ).val()
     }
 
-    USER.email = $( "#email" ).val();
-    api_request( "PUT", "/api/user", USER, function( response ) {
+    USER.full_name = $( "#full_name" ).val();
+    USER.pgp_key = $( "#pgp-key" ).val();
+    USER.email = $( "#email" ).val(),
+    USER.page_collection_paths_list = $( "#page_collection_paths_list" ).val();
+    USER.chainload_uri = $( "#chainload_uri" ).val();
+    USER.email_enabled = $('#email_enabled').is(':checked');
+
+    api_request( "PUT", "/api/user", userChange, function( response ) {
         if( response["success"] == false ) {
-            $( ".invalid_fields" ).text( response["invalid_fields"].join( ", " ) )
+            $( ".invalid_fields" ).text( response["message"] )
             $( ".bad_account_update_dialogue" ).fadeIn();
             setTimeout( function() {
                 $( ".bad_account_update_dialogue" ).fadeOut();
@@ -434,7 +437,6 @@ function update_account_setings() {
 }
 
 function populate_settings_page() {
-    $( "#username" ).val( USER.username );
     $( "#full_name" ).val( USER.full_name );
     $( "#domain" ).val( "https://" + USER.domain + "." + BASE_DOMAIN );
     $( "#pgp-key" ).val( USER.pgp_key );
