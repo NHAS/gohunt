@@ -595,9 +595,7 @@ function login() {
             show_app();
         } else {
             $( ".bad_password_dialogue" ).fadeIn();
-            if(data["error"] !== "") {
-                $( ".bad_password_dialogue" ).text( data["error"] );
-            }
+            $( ".bad_password_dialogue" ).text( data["message"] );
             $( "#username" ).select();
         }
     })

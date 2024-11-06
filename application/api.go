@@ -62,7 +62,7 @@ func (a *Application) getUserFromSubdomain(r *http.Request) (*models.User, error
 	return &user, nil
 }
 
-var domainRegex = regexp.MustCompile(`^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$`)
+var domainRegex = regexp.MustCompile(`^[a-zA-Z0-9]+[-]*$`)
 
 // Handlers
 func (a *Application) registerHandler(w http.ResponseWriter, r *http.Request) {
@@ -177,7 +177,7 @@ func (a *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	var loginRequest models.LoginUserRequest
 	if err := jsonDecoder(r.Body).Decode(&loginRequest); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		models.Message(w, false, "Invalid request body")
 		return
 	}
 
@@ -187,14 +187,14 @@ func (a *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("Invalid username or password supplied")
 		log.Printf("Someone failed to log in as %q", loginRequest.Username)
 
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		models.Message(w, false, "Failed to log in")
 		return
 	}
 
 	// Compare the stored hashed password with the provided password
 	if !existingUser.ComparePassword(loginRequest.Password) {
 		log.Printf("Invalid password supplied for %q", loginRequest.Username)
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		models.Message(w, false, "Failed to log in")
 		return
 	}
 
@@ -205,8 +205,10 @@ func (a *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	csrfToken, err := a.store.GenerateCSRFFromSession(sessId)
 	if err != nil {
-		log.Println("failed to generate csrf token")
-		http.Error(w, "Failed to generate CSRF token", http.StatusInternalServerError)
+		log.Println("Failed to generate csrf token: ", err)
+
+		models.Message(w, false, "Server Error")
+
 		return
 	}
 
