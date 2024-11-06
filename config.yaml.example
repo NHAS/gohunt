@@ -14,10 +14,10 @@ notification:
     password: 
 
 database:
-  password: mysecretpassword
+  password: gohunt
   user: gohunt
   dbname: gohunt
-  host: localhost
+  host: 127.0.0.1
   port: 5432
   sslmode: disable
 
