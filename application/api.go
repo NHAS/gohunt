@@ -615,27 +615,29 @@ func (a *Application) getXSSPayloadFiresHandler(w http.ResponseWriter, r *http.R
 
 func (a *Application) contactUsHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
+	if a.config.Features.Contact.Enabled {
 
-	var contact models.ContactRequest
-	err := jsonDecoder(r.Body).Decode(&contact)
-	if err != nil {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
-		return
+		var contact models.ContactRequest
+		err := jsonDecoder(r.Body).Decode(&contact)
+		if err != nil {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+
+		//TODO rate limit and recaptcha this
+
+		sendMail := a.config.Notification.SMTP.Enabled && a.config.Features.Contact.AbuseEmail != ""
+		if sendMail {
+
+			message := fmt.Sprintf("Name: %q\n", contact.Name)
+			message += fmt.Sprintf("Email: %q\n", contact.Email)
+			message += fmt.Sprintf("Body: %q\n", contact.Body)
+
+			go a.sendMail(a.config.Features.Contact.AbuseEmail, "GoHunt Contact Form Submission", "text/plain", message)
+		}
+
+		models.Boolean(w, true)
 	}
-
-	//TODO rate limit and recaptcha this
-
-	sendMail := a.config.Notification.SMTP.Enabled && a.config.AbuseEmail != ""
-	if sendMail {
-
-		message := fmt.Sprintf("Name: %q\n", contact.Name)
-		message += fmt.Sprintf("Email: %q\n", contact.Email)
-		message += fmt.Sprintf("Body: %q\n", contact.Body)
-
-		go a.sendMail(a.config.AbuseEmail, "GoHunt Contact Form Submission", "text/plain", message)
-	}
-
-	models.Boolean(w, true)
 }
 
 func (a *Application) resendInjectionEmailHandler(w http.ResponseWriter, r *http.Request) {

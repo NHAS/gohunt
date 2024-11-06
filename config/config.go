@@ -10,11 +10,21 @@ import (
 // Config holds the application settings
 type Config struct {
 	Domain        string `yaml:"domain"`
-	AbuseEmail    string `yaml:"abuse_email"`
 	ListenAddress string `yaml:"listen_address"`
 
 	// Used to parse xff
 	NumberProxies int `yaml:"number_proxies"`
+
+	Features struct {
+		Contact struct {
+			Enabled    bool   `yaml:"enabled"`
+			AbuseEmail string `yaml:"abuse_email"`
+		}
+
+		Signup struct {
+			Enabled bool `yaml:"enabled"`
+		}
+	}
 
 	Notification struct {
 		SMTP struct {

@@ -77,14 +77,21 @@ func (a *Application) Run() error {
 	managementDomain.HandleFunc("/", a.homepage).Methods("GET")
 	managementDomain.HandleFunc("/app", a.app).Methods("GET")
 	managementDomain.HandleFunc("/features", a.features).Methods("GET")
-	managementDomain.HandleFunc("/signup", a.signup).Methods("GET")
-	managementDomain.HandleFunc("/contact", a.contact).Methods("GET")
 	managementDomain.PathPrefix("/static/").HandlerFunc(ui.Static).Methods("GET")
 
 	// Public API routes
-	managementDomain.HandleFunc("/api/register", a.registerHandler).Methods("POST")
 	managementDomain.HandleFunc("/api/login", a.loginHandler).Methods("POST")
-	managementDomain.HandleFunc("/api/contactus", a.contactUsHandler).Methods("POST")
+
+	// Optional features
+	if a.config.Features.Signup.Enabled {
+		managementDomain.HandleFunc("/signup", a.signup).Methods("GET")
+		managementDomain.HandleFunc("/api/register", a.registerHandler).Methods("POST")
+	}
+
+	if a.config.Features.Contact.Enabled {
+		managementDomain.HandleFunc("/contact", a.contact).Methods("GET")
+		managementDomain.HandleFunc("/api/contactus", a.contactUsHandler).Methods("POST")
+	}
 
 	// Health check
 	managementDomain.HandleFunc("/health", a.healthHandler).Methods("GET")
