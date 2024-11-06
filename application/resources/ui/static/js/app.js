@@ -196,9 +196,9 @@ function display_full_report( id ) {
 function display_full_page_report( id ) {
     expanded_collected_page_id = id;
 
-    var i = get_collected_page_row_offset( id );
-    var collected_pages = get_collected_page_data_from_id( id );
-    var full_page_row = $.parseHTML('<td colspan="2" class="collected_page_full_page_view"><div class="panel panel-default"><div class="panel-heading"><h3 class="panel-title">DOM</h3></div><div class="full_page_report_dom panel-body"></div></div></td>')[0];
+    let i = get_collected_page_row_offset( id );
+    let collected_pages = get_collected_page_data_from_id( id );
+    let full_page_row = $.parseHTML('<td colspan="2" class="collected_page_full_page_view"><div class="panel panel-default"><div class="panel-heading"><h3 class="panel-title">DOM</h3></div><div class="full_page_report_dom panel-body"></div></div></td>')[0];
     $( ".collected_page_full_page_view" ).remove();
 
     var dom = document.createElement( "pre" );
@@ -266,12 +266,11 @@ function append_collected_page_row( collected_page_data ) {
     var example_row = $.parseHTML( '<tr class="xss_fire_row_template"><td class="collected_pages_uri_td"><span class="collected_pages_uri_text"><a href="" class="collected_page_link"></a></span></td><td class="collected_pages_options_button_td"><button type="button" class="view_full_page_source_button btn btn-info btn-block"><span class="glyphicon glyphicon-eye-open"></span> View Page Details</button><button type="button" id="delete_collected_page_button_' + collected_page_data["UUID"] + '" class="delete_collected_page_button btn btn-danger btn-block"><span class="glyphicon glyphicon-trash"></span> Delete</button></td></tr>')[0];
     example_row.id = collected_page_data["UUID"];
     $( example_row ).find( ".collected_page_link" ).text( collected_page_data["uri"] );
-    if( is_safe_uri( collected_page_data["uri"] ) ) {
-        $( example_row ).find( ".collected_page_link" ).attr( "href", collected_page_data["uri"] );
-    }
+    $( example_row ).find( ".collected_page_link" ).attr( "href", "#" );
+    
     document.querySelector( "#collected_pages_data_rows" ).appendChild( example_row );
 
-    $("#delete_collected_page_button_" + collected_page_data["UUID"] ).click( function() {
+    $("#delete_collected_page_button_" + collected_page_data["UUID"] ).on( "click", function() {
         api_request( "DELETE", "/api/delete_collected_page", {"UUID": collected_page_data["UUID"]}, function( response ) {
             delete_collected_page( collected_page_data["UUID"] );
             $( "#" + collected_page_data["UUID"] ).fadeOut();

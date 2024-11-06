@@ -20,7 +20,7 @@ type CollectedPageRequest struct {
 }
 
 type CollectedPage struct {
-	Base `json:"-"`
+	Base
 
 	gorm.Model
 	CollectedPageRequest
@@ -31,6 +31,7 @@ type CollectedPage struct {
 
 func (cp *CollectedPage) DTO() CollectedPageDTO {
 	var r CollectedPageDTO
+	r.UUID = cp.UUID
 	r.PageHTML = cp.PageHTML
 	r.Timestamp = cp.Timestamp
 	r.URI = cp.URI
@@ -38,6 +39,7 @@ func (cp *CollectedPage) DTO() CollectedPageDTO {
 }
 
 type CollectedPageDTO struct {
+	Base
 	CollectedPageRequest
 	Timestamp int64 `json:"timestamp"`
 }
