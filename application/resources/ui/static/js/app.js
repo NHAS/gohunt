@@ -229,7 +229,7 @@ function populate_xss_fires( offset, limit ) {
             this.href = this.childNodes[0].src;
         })
 
-        $( ".view_full_report_button" ).con("click",function() {
+        $( ".view_full_report_button" ).on("click",function() {
             let parent_id = this.parentElement.parentElement.id;
             if( parent_id == expanded_report_id ) {
                 $( ".full_injection_report_expanded" ).remove();
