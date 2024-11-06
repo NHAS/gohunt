@@ -14,18 +14,18 @@ type Injection struct {
 	gorm.Model `json:"-"`
 
 	Base
-	VulnerablePage     string    `json:"vulnerable_page"`
-	VictimIP           string    `json:"victim_ip"`
-	Referer            string    `json:"referer"`
-	UserAgent          string    `json:"user_agent"`
+	VulnerablePage     string    `json:"uri"`
+	VictimIP           string    `json:"ip"`
+	Referer            string    `json:"referrer"`
+	UserAgent          string    `json:"user-agent"`
 	Cookies            string    `json:"cookies"`
 	DOM                string    `json:"dom"`
 	Origin             string    `json:"origin"`
 	Screenshot         string    `json:"screenshot"`
 	InjectionTimestamp int64     `json:"injection_timestamp"`
-	BrowserTime        int64     `json:"browser_time"`
+	BrowserTime        int64     `json:"browser-time"`
 	OwnerID            uuid.UUID `json:"-"`
-	CorrelatedRequest  string    `json:"correlated_request"`
+	CorrelatedRequest  string    `json:"injection_key"`
 }
 
 type InjectionRequest struct {

@@ -32,10 +32,7 @@ func Static(w http.ResponseWriter, r *http.Request) {
 	headers := w.Header()
 	headers.Set("Content-Type", mime.TypeByExtension(filepath.Ext(path)))
 
-	_, err = w.Write(fileContent)
-	if err != nil {
-		log.Println("error writing embeded content: ", err)
-	}
+	w.Write(fileContent)
 }
 
 func RenderDefaults(w http.ResponseWriter, r *http.Request, funcs template.FuncMap, model interface{}, content ...string) error {

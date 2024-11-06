@@ -805,11 +805,7 @@ func (a *Application) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var newInjection struct {
-		models.Injection
-		InjectionKey string `json:"injection_key"`
-	}
-
+	var newInjection models.Injection
 	err = json.Unmarshal(contents, &newInjection)
 	if err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
@@ -820,24 +816,24 @@ func (a *Application) callbackHandler(w http.ResponseWriter, r *http.Request) {
 	newInjection.OwnerID = ownerUser.UUID
 
 	newInjection.CorrelatedRequest = "Could not correlate XSS payload fire with request!"
-	if newInjection.InjectionKey != "[PROBE_ID]" {
+	if newInjection.CorrelatedRequest != "[PROBE_ID]" {
 		var request models.InjectionRequest
-		if err := a.db.Where("injection_key = ? AND owner_correlation_key = ?", newInjection.InjectionKey, ownerUser.OwnerCorrelationKey).First(&request).Error; err == nil {
+		if err := a.db.Where("injection_key = ? AND owner_correlation_key = ?", newInjection.CorrelatedRequest, ownerUser.OwnerCorrelationKey).First(&request).Error; err == nil {
 			newInjection.CorrelatedRequest = request.Request
 		}
 	}
 
-	if err := a.db.Create(&newInjection.Injection).Error; err != nil {
+	if err := a.db.Create(&newInjection).Error; err != nil {
 		log.Println("failed to create new injection: ", err)
 		http.Error(w, "Failed", http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("User %q just got an XSS callback for URI %q", ownerUser.Username, "")
+	log.Printf("User %q just got an XSS callback for URI %q", ownerUser.Username, newInjection.VulnerablePage)
 
 	if ownerUser.EmailEnabled && a.config.Notification.SMTP.Enabled {
 		// Runs in its own goroutine
-		a.sendJSInjectionMail(ownerUser.Email, newInjection.Injection)
+		a.sendJSInjectionMail(ownerUser.Email, newInjection)
 	}
 
 	a.writeJson(w, struct{}{})
