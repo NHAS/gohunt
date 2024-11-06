@@ -1,0 +1,23 @@
+{{define "users"}}
+<div class="panel panel-default">
+    <div class="panel-heading space">
+        <span>
+            <span title="GoHunt Users Accounts" data-toggle="popover" data-placement="top" data-content="This is a list of all user accounts gohunt knows about." class="glyphicon glyphicon-user" aria-hidden="true"></span> 
+            GoHunt Users Accounts
+        </span>
+    </div>
+    <table id="users_data_table" class="table">
+        <thead>
+            <tr>
+                <th class="full_name_column_header">Full Name</th>
+                <th class="email_column_header">Email</th>
+                <th class="attributes_column_header">Attributes</th>
+                <th class="users_options_column_header">Options</th>
+            </tr>
+        </thead>
+        <tbody id="users_data_rows">
+        </tbody>
+    </table>
+    <div class="users_paginator_div"></div>
+</div>
+{{end}}

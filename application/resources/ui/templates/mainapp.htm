@@ -67,6 +67,9 @@
                 <li class="active"><a href="#home1" data-toggle="tab"><span class="glyphicon glyphicon-fire" aria-hidden="true"></span> XSS Fires</a></li>
                 <li><a href="#collected_pages" data-toggle="tab"><span class="glyphicon glyphicon-inbox"></span> Collected Pages</a></li>
                 <li><a href="#payloads" data-toggle="tab"><span class="glyphicon glyphicon-flash"></span> Payloads</a></li>
+                {{if isAdmin}}
+                <li><a href="#users" data-toggle="tab"><span class="glyphicon glyphicon-user"></span> Users</a></li>
+                {{end}}
                 <li><a href="#settings" data-toggle="tab"><span class="glyphicon glyphicon-cog"></span> Settings</a></li>
             </ul>
             <div id="myTabContent" class="tab-content">
@@ -79,6 +82,11 @@
                 <div class="tab-pane fade" id="payloads">
                     {{block "payloads" .}}{{end}}
                 </div>
+                {{if isAdmin}}
+                <div class="tab-pane fade" id="users">
+                    {{block "users" .}}{{end}}
+                </div>
+                {{end}}
                 <div class="tab-pane fade" id="settings">
                     {{block "settings" .}}{{end}}
                 </div>

@@ -21,8 +21,21 @@ func (a *Application) app(w http.ResponseWriter, r *http.Request) {
 			"csrfToken": func() template.HTML {
 				t, _ := a.store.GenerateCSRFTokenTemplateHTML(r)
 				return t
-			}},
-		models.UIOptions(a.config), "mainapp_collected_pages.htm", "mainapp_payloads.htm", "mainapp_settings.htm", "mainapp_xss_fires.htm", "mainapp.htm"); err != nil {
+			},
+			"isAdmin": func() bool {
+				_, s := a.store.GetSessionFromRequest(r)
+				if s == nil {
+					return false
+				}
+
+				var newUser models.User
+				if err := a.db.Where("uuid = ?", s.UUID).First(&newUser).Error; err != nil {
+					return false
+				}
+				return newUser.IsAdmin
+			},
+		},
+		models.UIOptions(a.config), "mainapp_collected_pages.htm", "mainapp_payloads.htm", "mainapp_admin_users.htm", "mainapp_settings.htm", "mainapp_xss_fires.htm", "mainapp.htm"); err != nil {
 		log.Println("failed: ", err)
 	}
 }

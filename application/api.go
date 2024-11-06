@@ -379,6 +379,7 @@ func (a *Application) oidcLoginHandler(w http.ResponseWriter, r *http.Request) {
 				existingUser.Username = "sso-" + info.PreferredUsername + a.generateRandom(10)
 			}
 
+			existingUser.IsAdmin = isAdmin
 			existingUser.Email = info.Email
 
 			// Make sure we unset the domain, so that if a user has a custom domain we dont stomp it
