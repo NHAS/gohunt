@@ -625,9 +625,7 @@ func (a *Application) contactUsHandler(w http.ResponseWriter, r *http.Request) {
 
 	//TODO rate limit and recaptcha this
 
-	sendMail := a.config.Notification.SMTP.Enabled && a.config.AbuseEmail == ""
-	log.Println("Contact form was used, sending email: ", sendMail)
-
+	sendMail := a.config.Notification.SMTP.Enabled && a.config.AbuseEmail != ""
 	if sendMail {
 
 		message := fmt.Sprintf("Name: %q\n", contact.Name)
