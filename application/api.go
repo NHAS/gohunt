@@ -769,6 +769,27 @@ func (a *Application) healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("GOHUNTER_OK"))
 }
 
+func (a *Application) getIPFromRequest(r *http.Request) string {
+
+	//Do not respect the X-Forwarded-For header until we are explictly told we are being proxied.
+	if a.config.NumberProxies > 0 {
+		ips := r.Header.Get("X-Forwarded-For")
+		addresses := strings.Split(ips, ",")
+
+		if ips != "" && len(addresses) > 0 {
+
+			if len(addresses)-a.config.NumberProxies < 0 {
+				log.Println("WARNING XFF parsing may be broken: ", len(addresses)-a.config.NumberProxies, " check config.NumberProxies")
+				return strings.TrimSpace(addresses[len(addresses)-1])
+			}
+
+			return strings.TrimSpace(addresses[len(addresses)-a.config.NumberProxies])
+		}
+	}
+
+	return r.RemoteAddr
+}
+
 // This is the handler that receives the XSS payload data upon it firing in someone's browser, it contains things such as session cookies, the page DOM, a screenshot of the page, etc.
 func (a *Application) callbackHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodOptions && r.Method != http.MethodPost {
@@ -811,6 +832,8 @@ func (a *Application) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
+
+	newInjection.VictimIP = a.getIPFromRequest(r)
 
 	newInjection.InjectionTimestamp = time.Now().Unix()
 	newInjection.OwnerID = ownerUser.UUID

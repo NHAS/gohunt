@@ -108,15 +108,6 @@ label {
     word-wrap: normal;
 }
 
-.injection_markdown_report {
-    display: inline-block;
-    overflow: auto;
-    float: left;
-    max-height: 400px;
-    white-space: pre-wrap;
-    word-wrap: normal;
-}
-
 li.L0, li.L1, li.L2, li.L3,
 li.L5, li.L6, li.L7, li.L8
 {

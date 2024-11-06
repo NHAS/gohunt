@@ -1,6 +1,7 @@
 abuse_email: contact@example.com
 domain: localhost
 listen_address: 127.0.0.1:8081
+number_proxies: 1
 
 notifications:
   smtp:

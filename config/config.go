@@ -13,6 +13,9 @@ type Config struct {
 	AbuseEmail    string `yaml:"abuse_email"`
 	ListenAddress string `yaml:"listen_address"`
 
+	// Used to parse xff
+	NumberProxies int `yaml:"number_proxies"`
+
 	Notification struct {
 		SMTP struct {
 			Enabled bool `yaml:"enabled"`
