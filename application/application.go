@@ -1,18 +1,24 @@
 package application
 
 import (
+	"context"
+	"crypto/rand"
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
+	"path"
 	"time"
 
 	"github.com/NHAS/gohunt/application/models"
 	"github.com/NHAS/gohunt/application/resources/ui"
 	"github.com/NHAS/gohunt/config"
 	"github.com/gorilla/mux"
+	"github.com/zitadel/oidc/v3/pkg/client/rp"
 
 	"github.com/NHAS/session"
 	"github.com/google/uuid"
+	httphelper "github.com/zitadel/oidc/v3/pkg/http"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -27,6 +33,8 @@ type Application struct {
 
 	store *session.SessionStore[SessionEntry]
 	db    *gorm.DB
+
+	provider rp.RelyingParty
 }
 
 func New(c config.Config) (*Application, error) {
@@ -52,6 +60,55 @@ func New(c config.Config) (*Application, error) {
 	db.AutoMigrate(&models.User{}, &models.Injection{}, &models.InjectionRequest{}, &models.CollectedPage{})
 
 	newApplication.db = db
+
+	if c.Features.Oidc.Enabled {
+
+		hashkey := make([]byte, 32)
+		_, err := rand.Read(hashkey)
+		if err != nil {
+			return nil, err
+		}
+
+		key := make([]byte, 32)
+		_, err = rand.Read(key)
+		if err != nil {
+			return nil, err
+		}
+
+		cookieHandler := httphelper.NewCookieHandler([]byte(hashkey), []byte(key), httphelper.WithUnsecure())
+
+		options := []rp.Option{
+			rp.WithCookieHandler(cookieHandler),
+			rp.WithVerifierOpts(rp.WithIssuedAtOffset(10 * time.Second)),
+		}
+
+		chosenDomain := c.Domain
+		if c.Features.Oidc.PublicURL != "" {
+			log.Println("Using public_url for SSO redirect url")
+			chosenDomain = c.Features.Oidc.PublicURL
+		}
+
+		u, err := url.Parse(chosenDomain)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse domain: %s", chosenDomain)
+		}
+
+		if u.Scheme == "" {
+			u.Scheme = "https"
+		}
+
+		u.Path = path.Join(u.Path, "/api/login/oidc")
+		log.Println("OIDC callback: ", u.String())
+		log.Println("Connecting to OIDC provider: ", c.Features.Oidc.IssuerURL)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+
+		newApplication.provider, err = rp.NewRelyingPartyOIDC(ctx, c.Features.Oidc.IssuerURL, c.Features.Oidc.ClientID, c.Features.Oidc.ClientSecret, u.String(), []string{"openid"}, options...)
+		cancel()
+		if err != nil {
+			return nil, fmt.Errorf("failed to connect to SSO Idp provider: %s, client_id %q, issuer_url %q, redirect_url %q", err, c.Features.Oidc.ClientID, c.Features.Oidc.IssuerURL, u.String())
+		}
+	}
 
 	return &newApplication, nil
 }
@@ -81,6 +138,10 @@ func (a *Application) Run() error {
 
 	// Public API routes
 	managementDomain.HandleFunc("/api/login", a.loginHandler).Methods("POST")
+	if a.config.Features.Oidc.Enabled {
+		managementDomain.HandleFunc("/api/login/oidc", a.oidcLoginRedirect).Methods("GET")
+		managementDomain.HandleFunc("/api/login/oidc/authorise", a.oidcLoginHandler).Methods("GET")
+	}
 
 	// Optional features
 	if a.config.Features.Signup.Enabled {

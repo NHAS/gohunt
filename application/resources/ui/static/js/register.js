@@ -21,8 +21,6 @@ function register_account() {
     USER.invite_code = $( "#invite_code" ).val();
     api_request( "POST", "/api/register", USER, function( response ) {
         if( response["success"] == true ) {
-            CSRF_TOKEN = response["csrf_token"];
-            localStorage.setItem( "CSRF_TOKEN", CSRF_TOKEN );
             window.location = "/app";
         } else {
             $( ".bad_signup_text_fields" ).text( response["message"] );

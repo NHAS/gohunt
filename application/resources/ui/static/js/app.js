@@ -4,7 +4,6 @@ expanded_report_id = "";
 expanded_collected_page_id = "";
 
 BASE_DOMAIN = (location.host.toString())
-possible_csrf_token = localStorage.getItem("CSRF_TOKEN");
 
 $(".xsshunter_application").width(screen.width);
 
@@ -12,8 +11,8 @@ $(window).on("resize", function () {
     $(".xsshunter_application").width(screen.width);
 });
 
-if (possible_csrf_token !== null) {
-    CSRF_TOKEN = possible_csrf_token;
+let possible_csrf_token = getCSRFToken()
+if(possible_csrf_token != "") {
     get_user_data(function () {
         show_app();
     }, function () {
@@ -609,8 +608,7 @@ function login() {
     api_request("POST", "/api/login", post_data, function (data) {
         hide_loading_bar();
         if (data["success"] == true) {
-            CSRF_TOKEN = data["csrf_token"];
-            localStorage.setItem("CSRF_TOKEN", CSRF_TOKEN);
+            $("#csrf_token").val(data["csrf_token"])
             show_app();
         } else {
             $(".bad_password_dialogue").fadeIn();

@@ -22,13 +22,22 @@ function set_loading_bar() {
  * Main GoHunt JavaScript
  * ( for the actual app )
  */
-CSRF_TOKEN = "";
 USER = {};
+
+function getCSRFToken() {
+   let potential_token = $("#csrf_token").val() 
+   if(potential_token === null) {
+    return null
+   }
+
+   return potential_token
+}
 
 function api_request( method, path, data, callback ) {
     show_loading_bar();
     header_data = {};
 
+    let CSRF_TOKEN = getCSRFToken()
     if( CSRF_TOKEN != "" ) {
         header_data["X-CSRF-Token"] = CSRF_TOKEN;
     }

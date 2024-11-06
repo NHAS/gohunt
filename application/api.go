@@ -2,6 +2,8 @@ package application
 
 import (
 	"bytes"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +17,8 @@ import (
 
 	"github.com/NHAS/gohunt/application/models"
 	"github.com/NHAS/gohunt/application/resources/notifications"
+	"github.com/zitadel/oidc/v3/pkg/client/rp"
+	"github.com/zitadel/oidc/v3/pkg/oidc"
 
 	"golang.org/x/crypto/bcrypt"
 	gomail "gopkg.in/mail.v2"
@@ -250,6 +254,129 @@ func (a *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
 	a.writeJson(w, res)
 
 	log.Printf("%q logged in", existingUser.Username)
+}
+
+func (a *Application) oidcLoginRedirect(w http.ResponseWriter, r *http.Request) {
+	_, s := a.store.GetSessionFromRequest(r)
+	if s != nil {
+
+		var testUser models.User
+		err := a.db.Where("uuid = ?", s.UUID).First(&testUser).Error
+		if err == nil {
+			http.Redirect(w, r, "/app", http.StatusSeeOther)
+			return
+		}
+	}
+
+	rp.AuthURLHandler(func() string {
+		return a.generateRandom(32)
+	}, a.provider)(w, r)
+}
+
+func (a *Application) generateRandom(size int) string {
+	randomToken := make([]byte, size)
+	rand.Read(randomToken)
+	return hex.EncodeToString(randomToken)
+}
+
+func (a *Application) oidcLoginHandler(w http.ResponseWriter, r *http.Request) {
+
+	marshalUserinfo := func(w http.ResponseWriter, r *http.Request, tokens *oidc.Tokens[*oidc.IDTokenClaims], state string, rp rp.RelyingParty, info *oidc.UserInfo) {
+
+		isAdmin := false
+		if a.config.Features.Oidc.AdminGroupClaimName != "" && a.config.Features.Oidc.AdminGroup != "" {
+
+			groupsIntf, ok := tokens.IDTokenClaims.Claims[a.config.Features.Oidc.AdminGroupClaimName].([]interface{})
+			if !ok {
+				log.Printf("Error, could not convert group claim %q to []string, probably error in oidc idP configuration", a.config.Features.Oidc.AdminGroupClaimName)
+				http.Error(w, "Server Error", http.StatusInternalServerError)
+				return
+			}
+
+			for i := range groupsIntf {
+				conv, ok := groupsIntf[i].(string)
+				if !ok {
+					log.Println("Error, could not convert group claim to string, probably mistake in your OIDC idP configuration")
+					http.Error(w, "Server Error", http.StatusInternalServerError)
+					return
+				}
+
+				if conv == a.config.Features.Oidc.AdminGroup {
+					isAdmin = true
+					break
+				}
+			}
+
+		}
+
+		var existingUser models.User
+		err := a.db.Where("sso_subject = ?", info.Subject).First(&existingUser).Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Println("Failed to login, searching DB failed: ", err)
+			http.Error(w, "Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		// If this is a new SSO user
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			// This is a new SSO user
+			// Create new user
+			user := models.User{
+				UserDTO: models.UserDTO{
+					Username:     "sso-" + info.PreferredUsername + a.generateRandom(10),
+					Email:        info.Email,
+					Domain:       info.PreferredUsername + a.generateRandom(10),
+					EmailEnabled: false,
+					FullName:     info.Name,
+					SSOSubject:   info.Subject,
+					IsAdmin:      isAdmin,
+				},
+			}
+
+			// Even if we're just an SSO user, make a password just in case
+			b, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
+			if err != nil {
+				models.Message(w, false, "Server Error")
+				return
+			}
+
+			user.Password = string(b)
+
+			if err := a.db.Create(&user).Error; err != nil {
+				log.Println("Failed to save user in database: ", err)
+				http.Error(w, "Server Error", http.StatusInternalServerError)
+				return
+			}
+
+			var newUser models.User
+			if err := a.db.Where("username = ?", user.Username).First(&newUser).Error; err != nil {
+				log.Println("Failed to fetch existing user: ", err)
+				http.Error(w, "Server Error", http.StatusInternalServerError)
+				return
+			}
+
+			a.store.StartSession(w, r, SessionEntry{UUID: newUser.UUID}, nil)
+		} else {
+			// If this SSO user already exists, we just need to make sure the details are up-to-date
+			existingUser.Username = "sso-" + info.PreferredUsername + a.generateRandom(10)
+			existingUser.Email = info.Email
+
+			// Make sure we unset the domain, so that if a user has a custom domain we dont stomp it
+			existingUser.Domain = ""
+
+			if err := a.db.Save(&existingUser).Error; err != nil {
+				log.Println("Failed to update SSO user details in database: ", err)
+				http.Error(w, "Server Error", http.StatusInternalServerError)
+				return
+			}
+
+			a.store.StartSession(w, r, SessionEntry{UUID: existingUser.UUID}, nil)
+		}
+
+		http.Redirect(w, r, "/app", http.StatusSeeOther)
+	}
+
+	rp.CodeExchangeHandler(rp.UserinfoCallback(marshalUserinfo), a.provider)(w, r)
 }
 
 func (a *Application) getAuthenticatedUser(r *http.Request) *models.User {

@@ -24,6 +24,16 @@ type Config struct {
 		Signup struct {
 			Enabled bool `yaml:"enabled"`
 		}
+
+		Oidc struct {
+			Enabled             bool   `yaml:"enabled"`
+			PublicURL           string `yaml:"public_url"`
+			IssuerURL           string `yaml:"issuer_url"`
+			ClientID            string `yaml:"client_id"`
+			ClientSecret        string `yaml:"client_secret"`
+			AdminGroupClaimName string `yaml:"admin_group_claim_name"`
+			AdminGroup          string `yaml:"admin_group_name"`
+		}
 	}
 
 	Notification struct {

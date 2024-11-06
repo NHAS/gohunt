@@ -1,7 +1,7 @@
 {{block "header" .}}{{end}}
 <body>
     {{block "navbar" .}}{{end}}
-
+    {{ csrfToken }}
     <div class="bad_password_dialogue alert alert-danger">
         <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
         <strong>Invalid Password</strong><br />
@@ -39,6 +39,9 @@
                 <input autocomplete="off"  type="password" id="password" class="form-control" name="password" placeholder="hunter2">
 
                 <button type="button" id="login_button" class="btn btn-primary btn-block">Login</button>
+                {{if .SSO}}
+                <a type="button" class="btn btn-success btn-block" href="/api/login/oidc">Login with SSO</a>
+                {{end}}
             </div>
         </div>
     </div>
