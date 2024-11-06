@@ -524,7 +524,7 @@ func (a *Application) sendJSPGPMail(to string, pgpMessage string) {
 func (a *Application) sendJSInjectionMail(to string, injection models.Injection) {
 
 	if a.config.Notification.Confidential {
-		go a.sendMail(to, "[Go Hunt] XSS Payload Fired", "An XSS fired, you should check it out on https://"+a.config.Domain+" (confidential mode is on, no details will be reported via notification)")
+		go a.sendMail(to, "[Go Hunt] XSS Payload Fired", "text/plain", "An XSS fired, you should check it out on https://"+a.config.Domain+" (confidential mode is on, no details will be reported via notification)")
 		return
 	}
 
@@ -632,7 +632,7 @@ func (a *Application) contactUsHandler(w http.ResponseWriter, r *http.Request) {
 		message += fmt.Sprintf("Email: %q\n", contact.Email)
 		message += fmt.Sprintf("Body: %q\n", contact.Body)
 
-		go a.sendMail(a.config.AbuseEmail, "GoHunt Contact Form Submission", message, "text/plain")
+		go a.sendMail(a.config.AbuseEmail, "GoHunt Contact Form Submission", "text/plain", message)
 	}
 
 	models.Boolean(w, true)
