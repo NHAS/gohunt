@@ -9,6 +9,16 @@ type InjectionDeleteRequest struct {
 	Base
 }
 
+type BulkInjectionDeleteRequest struct {
+	VictimIP string `json:"ip"`
+	URI      string `json:"uri"`
+}
+
+type BulkInjectionDeleteResponse struct {
+	Results []Injection `json:"results"`
+	Success bool        `json:"success"`
+}
+
 // Has no DTO object as the contents are not sensitive
 type Injection struct {
 	gorm.Model `json:"-"`

@@ -1,6 +1,13 @@
 {{define "xssfires"}}
 <div class="panel panel-default">
-    <div class="panel-heading"><span title="XSS Payload Fires" data-toggle="popover" data-placement="top" data-content="This is a list of all of the places where your XSS payload has fired." class="glyphicon glyphicon-fire" aria-hidden="true"></span> XSS Payload Fires</div>
+    <div class="panel-heading space">
+        <span>
+            <span title="XSS Payload Fires" data-toggle="popover" data-placement="top" data-content="This is a list of all of the places where your XSS payload has fired." class="glyphicon glyphicon-fire" aria-hidden="true"></span> 
+            XSS Payload Fires
+        </span>
+        
+        <button id="bulk-delete-button-options" class="btn btn-primary"><span class="glyphicon glyphicon-trash"></span> Bulk Delete Options</button>
+    </div>
     <table id="injection_data_table" class="table">
         <thead>
             <tr>

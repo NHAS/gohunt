@@ -434,6 +434,53 @@ func (a *Application) deleteInjectionHandler(w http.ResponseWriter, r *http.Requ
 	models.Message(w, true, "Injection deleted!")
 }
 
+func (a *Application) deleteBulkInjections(w http.ResponseWriter, r *http.Request) {
+	user := a.getAuthenticatedUser(r)
+	if user == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	var toDelete models.BulkInjectionDeleteRequest
+	err := jsonDecoder(r.Body).Decode(&toDelete)
+	if err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	toDelete.URI = strings.TrimSpace(toDelete.URI)
+	toDelete.VictimIP = strings.TrimSpace(toDelete.VictimIP)
+
+	if toDelete.URI == "" && toDelete.VictimIP == "" {
+		models.Message(w, false, "Empty request")
+		return
+	}
+
+	currentClause := a.db.Unscoped().Clauses(clause.Returning{}).Where("owner_id = ?", user.UUID)
+	if toDelete.URI != "" {
+		currentClause = currentClause.Or("vulnerable_page = ?", toDelete.URI)
+	}
+
+	if toDelete.VictimIP != "" {
+		currentClause = currentClause.Or("victim_ip = ?", toDelete.VictimIP)
+	}
+
+	deletedItems := []models.Injection{}
+	if err := currentClause.Delete(&deletedItems).Error; err != nil {
+		log.Println("failed", err)
+		models.Message(w, false, "Not found")
+		return
+	}
+
+	log.Printf("User bulk deleted injection records with an ip of %q or uri of %q, total: %d", toDelete.VictimIP, toDelete.URI, len(deletedItems))
+
+	var response models.BulkInjectionDeleteResponse
+	response.Results = deletedItems
+	response.Success = len(deletedItems) > 0
+
+	a.writeJson(w, response)
+}
+
 func (a *Application) userInformationHandler(w http.ResponseWriter, r *http.Request) {
 	// GET
 	user := a.getAuthenticatedUser(r)

@@ -100,6 +100,7 @@ func (a *Application) Run() error {
 	authorizedPages := http.NewServeMux()
 	authorizedPages.HandleFunc("GET /collected_pages", a.getCollectedPagesHandler)
 	authorizedPages.HandleFunc("DELETE /delete_injection", a.deleteInjectionHandler)
+	authorizedPages.HandleFunc("DELETE /bulk_delete_injection", a.deleteBulkInjections)
 	authorizedPages.HandleFunc("DELETE /delete_collected_page", a.deleteCollectedPageHandler)
 	authorizedPages.HandleFunc("GET /user", a.userInformationHandler)
 	authorizedPages.HandleFunc("PUT /user", a.editUserInformationHandler)
