@@ -24,3 +24,9 @@ body {
 .panel-body {
     margin-bottom: 20px;
 }
+
+.btn-danger-outline {
+  background-color: #ffffff;
+  border-color: #da4453;
+  color: #da4453;
+}

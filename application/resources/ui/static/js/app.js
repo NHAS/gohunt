@@ -381,7 +381,7 @@ function update_account_setings() {
     USER.full_name = $( "#full_name" ).val();
     USER.pgp_key = $( "#pgp-key" ).val();
     USER.email = $( "#email" ).val(),
-    USER.page_collection_paths_list = $( "#page_collection_paths_list" ).val();
+    USER.page_collection_paths_list = $( "#page_collection_paths_list" ).val().split(/\r?\n/);
     USER.chainload_uri = $( "#chainload_uri" ).val();
     USER.email_enabled = $('#email_enabled').is(':checked');
 
@@ -407,7 +407,12 @@ function populate_settings_page() {
     $( "#domain" ).val( "https://" + USER.domain + "." + BASE_DOMAIN );
     $( "#pgp-key" ).val( USER.pgp_key );
     $( "#email" ).val( USER.email );
-    $( "#page_collection_paths_list" ).val( USER.page_collection_paths_list.join("\n") );
+    
+    $( "#page_collection_paths_list" ).val("")
+    if(USER.page_collection_paths_list !== null) {
+        $( "#page_collection_paths_list" ).val( USER.page_collection_paths_list.join("\n") );
+    }
+
     $( "#chainload_uri" ).val( USER.chainload_uri );
     $( "#email_enabled" ).prop('checked', USER.email_enabled);
 
