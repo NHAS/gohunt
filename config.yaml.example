@@ -8,6 +8,12 @@ features:
     abuse_email: contact@example.com
   signup:
     enabled: true
+  oidc: 
+    enabled: true
+    public_url: http://localhost:8081/
+    issuer_url: http://localhost:8080/realms/Test
+    client_id: gohunt
+    client_secret: <secret>
 
 notification:
   confidential: true

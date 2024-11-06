@@ -97,7 +97,7 @@ func New(c config.Config) (*Application, error) {
 			u.Scheme = "https"
 		}
 
-		u.Path = path.Join(u.Path, "/api/login/oidc")
+		u.Path = path.Join(u.Path, "/api/login/oidc/authorise")
 		log.Println("OIDC callback: ", u.String())
 		log.Println("Connecting to OIDC provider: ", c.Features.Oidc.IssuerURL)
 

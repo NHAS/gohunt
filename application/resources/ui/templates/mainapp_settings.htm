@@ -1,15 +1,17 @@
 {{define "settings"}}
 <label for="full_name">Full Name</label><br>
-<input id="full_name" class="form-control" name="full_name" placeholder="John Doe" autofocus type="text">
+<input id="full_name" class="form-control" name="full_name" {{if .SSO}}readonly="readonly"{{end}} placeholder="John Doe" autofocus type="text">
 
+{{if not .SSO}}
 <label for="settings_current_password">Current Password</label><br>
 <input id="settings_current_password" class="form-control" name="password" placeholder="hunter2" type="password">
 
 <label for="settings_password">Password</label><br>
 <input id="settings_password" class="form-control" name="password" placeholder="hunter2" type="password">
+{{end}}
 
 <label for="email">Email</label><br>
-<input id="email" class="form-control" name="email" placeholder="hacker@thegibson.com" type="email">
+<input id="email" class="form-control" name="email" {{if .SSO}}readonly="readonly"{{end}} placeholder="hacker@thegibson.com" type="email">
 
 <label for="domain">Custom <code>{{ .Domain }}</code> Subdomain <span title="XSS Payload Domain" data-toggle="popover" data-placement="top" data-content="Your custom GoHunt subdomain which identifies your injections. (<script src=//custom.{{ .Domain }}</script>)" class="glyphicon glyphicon-question-sign" aria-hidden="true"></span>
 </label>

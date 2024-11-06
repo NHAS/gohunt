@@ -222,6 +222,12 @@ func (a *Application) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if existingUser.SSOSubject != "" {
+		log.Println("SSO user tried to log in as regular user")
+		models.Message(w, false, "Failed to log in")
+		return
+	}
+
 	// Compare the stored hashed password with the provided password
 	if !existingUser.ComparePassword(loginRequest.Password) {
 		log.Printf("Invalid password supplied for %q", loginRequest.Username)
@@ -309,6 +315,12 @@ func (a *Application) oidcLoginHandler(w http.ResponseWriter, r *http.Request) {
 
 		}
 
+		if info.Subject == "" {
+			log.Println("SSO Subject is empty, idp is misconfigured")
+			http.Error(w, "Server Error", http.StatusInternalServerError)
+			return
+		}
+
 		var existingUser models.User
 		err := a.db.Where("sso_subject = ?", info.Subject).First(&existingUser).Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -318,7 +330,7 @@ func (a *Application) oidcLoginHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// If this is a new SSO user
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// This is a new SSO user
 			// Create new user
 			user := models.User{
@@ -334,9 +346,10 @@ func (a *Application) oidcLoginHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Even if we're just an SSO user, make a password just in case
-			b, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
+			b, err := bcrypt.GenerateFromPassword([]byte(a.generateRandom(32)), 10)
 			if err != nil {
-				models.Message(w, false, "Server Error")
+				log.Println("Failed to generate random SSO user password: ", err)
+				http.Error(w, "Server Error", http.StatusInternalServerError)
 				return
 			}
 
@@ -355,20 +368,29 @@ func (a *Application) oidcLoginHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			log.Printf("SSO User %q (%s) logged in first time login", newUser.Username, newUser.SSOSubject)
+
 			a.store.StartSession(w, r, SessionEntry{UUID: newUser.UUID}, nil)
 		} else {
 			// If this SSO user already exists, we just need to make sure the details are up-to-date
-			existingUser.Username = "sso-" + info.PreferredUsername + a.generateRandom(10)
+
+			if !strings.Contains(existingUser.Username, info.PreferredUsername) {
+				// If the Idp has changed the username, update only the username with a random suffix
+				existingUser.Username = "sso-" + info.PreferredUsername + a.generateRandom(10)
+			}
+
 			existingUser.Email = info.Email
 
 			// Make sure we unset the domain, so that if a user has a custom domain we dont stomp it
 			existingUser.Domain = ""
 
-			if err := a.db.Save(&existingUser).Error; err != nil {
+			if err := a.db.Omit("domain").Updates(&existingUser).Error; err != nil {
 				log.Println("Failed to update SSO user details in database: ", err)
 				http.Error(w, "Server Error", http.StatusInternalServerError)
 				return
 			}
+
+			log.Printf("SSO User %q (%s) logged in", existingUser.Username, existingUser.SSOSubject)
 
 			a.store.StartSession(w, r, SessionEntry{UUID: existingUser.UUID}, nil)
 		}
@@ -635,30 +657,37 @@ func (a *Application) editUserInformationHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if editReq.CurrentPassword == "" {
-		log.Printf("User  %q did not enter in current password to edit settings ", user.Username)
-		models.Message(w, false, "No current password supplied")
-		return
-	}
+	// SSO users dont have a password, so ignore all updates to password related stuff
+	// They also have their details managed by the idP, so ignore full name and email updates
+	if user.SSOSubject == "" {
 
-	if !user.ComparePassword(editReq.CurrentPassword) {
-		log.Printf("User %q entered incorrect current password to edit settings", user.Username)
-		models.Message(w, false, "Incorrect current password")
-		return
-	}
-
-	user.FullName = editReq.FullName
-	user.Email = editReq.Email
-	user.Password = editReq.Password
-	if editReq.Password != "" {
-		b, err := bcrypt.GenerateFromPassword([]byte(editReq.Password), 10)
-		if err != nil {
-			http.Error(w, "Server Error", http.StatusInternalServerError)
+		if editReq.CurrentPassword == "" {
+			log.Printf("User  %q did not enter in current password to edit settings ", user.Username)
+			models.Message(w, false, "No current password supplied")
 			return
 		}
 
-		user.Password = string(b)
+		if !user.ComparePassword(editReq.CurrentPassword) {
+			log.Printf("User %q entered incorrect current password to edit settings", user.Username)
+			models.Message(w, false, "Incorrect current password")
+			return
+		}
+		// SSO users dont have a password, so dont update one
+		user.Password = editReq.Password
+		if editReq.Password != "" {
+			b, err := bcrypt.GenerateFromPassword([]byte(editReq.Password), 10)
+			if err != nil {
+				http.Error(w, "Server Error", http.StatusInternalServerError)
+				return
+			}
+
+			user.Password = string(b)
+		}
+
+		user.FullName = editReq.FullName
+		user.Email = editReq.Email
 	}
+
 	user.EmailEnabled = editReq.EmailEnabled
 	user.ChainloadURI = editReq.ChainloadURI
 	user.PageCollectionPaths = editReq.PageCollectionPaths
