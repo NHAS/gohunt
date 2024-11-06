@@ -556,7 +556,7 @@ func (a *Application) sendMail(to, subject, contentType string, content ...strin
 	if err := dialer.DialAndSend(message); err != nil {
 		log.Println("failed to send email: ", err)
 	} else {
-		fmt.Println("Email notification sent successfully!")
+		log.Println("Email notification sent successfully!")
 	}
 }
 
@@ -625,7 +625,7 @@ func (a *Application) contactUsHandler(w http.ResponseWriter, r *http.Request) {
 
 	//TODO rate limit and recaptcha this
 
-	sendMail := a.config.Notification.SMTP.Enabled && a.config.AbuseEmail != ""
+	sendMail := a.config.Notification.SMTP.Enabled && a.config.AbuseEmail == ""
 	log.Println("Contact form was used, sending email: ", sendMail)
 
 	if sendMail {
