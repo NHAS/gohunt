@@ -9,11 +9,6 @@ type InjectionDeleteRequest struct {
 	Base
 }
 
-type InjectionAPIResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-}
-
 // Has no DTO object as the contents are not sensitive
 type Injection struct {
 	gorm.Model `json:"-"`

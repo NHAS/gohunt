@@ -34,7 +34,7 @@ func (a *Application) securityHeadersMiddleware(next http.Handler) http.Handler 
 
 		h := w.Header()
 		h.Set("X-Frame-Options", "deny")
-		h.Set("Content-Security-Policy", "default-src 'self'")
+		h.Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' https://fonts.googleapis.com")
 		h.Set("X-XSS-Protection", "1; mode=block")
 		h.Set("X-Content-Type-Options", "nosniff")
 
@@ -49,6 +49,33 @@ func (a *Application) securityHeadersMiddleware(next http.Handler) http.Handler 
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (a *Application) allowedDomain(w http.ResponseWriter, r *http.Request) {
+
+	domain := r.URL.Query().Get("domain")
+	if domain == "" {
+		http.NotFound(w, r)
+		return
+	}
+
+	if domain == a.config.Domain {
+		w.Write([]byte("OK!"))
+		return
+	}
+
+	search := strings.TrimSuffix(domain, "."+a.config.Domain)
+
+	var user models.User
+	if err := a.db.Where("domain = ?", search).First(&user).Error; err != nil {
+
+		log.Printf("denying request for %q subdomain certificate as not found", search)
+		http.NotFound(w, r)
+		return
+	}
+
+	log.Printf("allowed issuing of subdomain cert %q", search)
+	w.Write([]byte("OK!"))
 }
 
 func (a *Application) getUserFromSubdomain(r *http.Request) (*models.User, error) {

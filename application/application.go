@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type SessionEntry struct {
@@ -42,7 +43,9 @@ func New(c config.Config) (*Application, error) {
 
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", c.Database.Host, c.Database.Port, c.Database.User, c.Database.Password, c.Database.DBname, c.Database.SSLmode)
 
-	db, err := gorm.Open(postgres.Open(dsn))
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %s", err)
 	}
@@ -57,6 +60,8 @@ func (a *Application) Run() error {
 
 	r := mux.NewRouter()
 
+	r.HandleFunc("/check_domain", a.allowedDomain)
+
 	collectionDomains := r.Host("{subdomain:.*}." + a.config.Domain).Subrouter()
 
 	// Handles both post and options
@@ -64,7 +69,7 @@ func (a *Application) Run() error {
 	collectionDomains.HandleFunc("/page_callback", a.collectPageHandler)
 
 	// Public js collection routes
-	collectionDomains.HandleFunc("/", a.probe)
+	collectionDomains.PathPrefix("/").HandlerFunc(a.probe)
 
 	managementDomain := r.Host(a.config.Domain).Subrouter()
 

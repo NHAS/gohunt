@@ -317,9 +317,9 @@ function append_collected_page_row( collected_page_data ) {
 }
 
 function append_xss_fire_row( injection_data ) {
-    var example_row = $.parseHTML( '<tr class="xss_fire_row_template"><td class="xss_fire_thumbnail_column"><a class="xss_fire_thumbnail_image_link"><img class="xss_fire_thumbnail_image" src=""/></a></td><td class="victim_ip_address_column"><a target="_blank" class="ip_address_trace_link" href=""></a></td><td class="vulnerable_page_uri_column"><a target="_blank" class="vulnerable_page_uri"></a></td><td class="xss_payload_fire_options_column"><button type="button" class="view_full_report_button btn btn-info btn-block"><span class="glyphicon glyphicon-eye-open"></span> View Full Report</button><button type="button" id="resend_email_button_' + injection_data["id"] + '" class="btn btn-info btn-block"><span class="glyphicon glyphicon-envelope"></span> Resend Email Report</button><button type="button" id="delete_injection_button_' + injection_data["id"] + '" class="delete_injection_button btn btn-danger btn-block"><span class="glyphicon glyphicon-trash"></span> Delete</button></td></tr>')[0];
-    example_row.id = injection_data["id"];
-    example_row.querySelector( ".xss_fire_thumbnail_image" ).src =  "/api/" + injection_data["screenshot"];
+    let example_row = $.parseHTML( '<tr class="xss_fire_row_template"><td class="xss_fire_thumbnail_column"><a class="xss_fire_thumbnail_image_link"><img class="xss_fire_thumbnail_image" src=""/></a></td><td class="victim_ip_address_column"><a target="_blank" class="ip_address_trace_link" href=""></a></td><td class="vulnerable_page_uri_column"><a target="_blank" class="vulnerable_page_uri"></a></td><td class="xss_payload_fire_options_column"><button type="button" class="view_full_report_button btn btn-info btn-block"><span class="glyphicon glyphicon-eye-open"></span> View Full Report</button><button type="button" id="resend_email_button_' + injection_data["uuid"] + '" class="btn btn-info btn-block"><span class="glyphicon glyphicon-envelope"></span> Resend Email Report</button><button type="button" id="delete_injection_button_' + injection_data["uuid"] + '" class="delete_injection_button btn btn-danger btn-block"><span class="glyphicon glyphicon-trash"></span> Delete</button></td></tr>')[0];
+    example_row.id = injection_data["uuid"];
+    example_row.querySelector( ".xss_fire_thumbnail_image" ).src = injection_data["screenshot"];
     example_row.querySelector( ".ip_address_trace_link" ).href = "http://www.ip-tracker.org/locator/ip-lookup.php?ip=" + injection_data["victim_ip"];
     example_row.querySelector( ".ip_address_trace_link" ).text = injection_data["victim_ip"];
     example_row.querySelector( ".vulnerable_page_uri" ).text = injection_data["vulnerable_page"];
@@ -328,20 +328,20 @@ function append_xss_fire_row( injection_data ) {
     }
     document.querySelector( "#injection_data_rows" ).appendChild( example_row );
 
-    $("#delete_injection_button_" + injection_data["id"] ).click( function() {
-        api_request( "DELETE", "/api/delete_injection", {"id": injection_data["id"]}, function( response ) {
-            delete_injection( injection_data["id"] );
-            $( "#" + injection_data["id"] ).fadeOut();
-            $( "#" + injection_data["id"] ).remove();
-            if( expanded_report_id == injection_data["id"] ) {
+    $("#delete_injection_button_" + injection_data["uuid"] ).click( function() {
+        api_request( "DELETE", "/api/delete_injection", {"id": injection_data["uuid"]}, function( response ) {
+            delete_injection( injection_data["uuid"] );
+            $( "#" + injection_data["uuid"] ).fadeOut();
+            $( "#" + injection_data["uuid"] ).remove();
+            if( expanded_report_id == injection_data["uuid"] ) {
                 $( ".full_injection_report_expanded" ).remove();
             }
         });
     });
 
-    $("#resend_email_button_" + injection_data["id"] ).click( function() {
-        api_request( "POST", "/api/resend_injection_email", {"id": injection_data["id"]}, function( response ) {
-            var resend_button = $( "#resend_email_button_" + injection_data["id"] );
+    $("#resend_email_button_" + injection_data["uuid"] ).click( function() {
+        api_request( "POST", "/api/resend_injection_email", {"id": injection_data["uuid"]}, function( response ) {
+            var resend_button = $( "#resend_email_button_" + injection_data["uuid"] );
             resend_button.unbind();
             resend_button.html( '<span class="glyphicon glyphicon-ok"></span> Email Sent!' );
             resend_button.removeClass( "btn-info" );
