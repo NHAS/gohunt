@@ -1,13 +1,13 @@
 function send_contact_message() {
     contact_object = {}
-    contact_object[ "email" ] = $( "#email" ).val();
-    contact_object[ "name" ] = $( "#name" ).val();
-    contact_object[ "body" ] = $( "#body" ).val();
-    api_request( "POST", "/api/contactus", contact_object, function( response ){
-        if( response["success"] == true ) {
+    contact_object["email"] = $("#email").val();
+    contact_object["name"] = $("#name").val();
+    contact_object["body"] = $("#body").val();
+    api_request("POST", "/api/contactus", contact_object, function (response) {
+        if (response["success"] == true) {
             $(".contact_us_form_success_message").fadeIn();
             clear_contact_form();
-            setTimeout(function() {
+            setTimeout(function () {
                 $(".contact_us_form_success_message").fadeOut();
             }, 5000);
         }
@@ -15,12 +15,12 @@ function send_contact_message() {
 }
 
 function clear_contact_form() {
-    $( "#email" ).val("");
-    $( "#name" ).val("");
-    $( "#body" ).val("");
-    $( "#name" ).select();
+    $("#email").val("");
+    $("#name").val("");
+    $("#body").val("");
+    $("#name").select();
 }
 
-$( ".contact_us_button" ).click(function() {
+$(".contact_us_button").on("click", function () {
     send_contact_message();
 });

@@ -3,12 +3,12 @@ collected_page_data = [];
 expanded_report_id = "";
 expanded_collected_page_id = "";
 
-BASE_DOMAIN = ( document.domain.toString() ).replace( "www.", "" )
+BASE_DOMAIN = ( location.host.toString() )
 possible_csrf_token = localStorage.getItem("CSRF_TOKEN");
 
 $( ".xsshunter_application" ).width( screen.width );
 
-$( window ).resize(function() {
+$( window ).on("resize", function() {
     $( ".xsshunter_application" ).width( screen.width );
 });
 
@@ -23,31 +23,31 @@ if( possible_csrf_token !== null ) {
     show_log_in_prompt();
 }
 
-$( "#login_button" ).click(function() {
+$( "#login_button" ).on("click", function() {
     login();
 });
 
-$( "#username" ).keyup(function(e){
-    if(e.keyCode == 13) {
+$( "#username" ).on("keyup",function(e){
+    if(e.code == "Enter") {
         login();
     }
 });
 
-$( "#password" ).keyup(function(e){
-    if(e.keyCode == 13) {
+$( "#password" ).on("keyup",function(e){
+    if(e.code == "Enter") {
         login();
     }
 });
 
-$( "#update_account_button" ).click(function() {
+$( "#update_account_button" ).on("click", function() {
     update_account_setings();
 });
 
-$( "#reset_password_button" ).click(function() {
+$( "#reset_password_button" ).on("click",function() {
     perform_password_reset();
 });
 
-$( "#go_back_to_login_form_button" ).click(function() {
+$( "#go_back_to_login_form_button" ).on("click", function() {
     hide_password_reset();
 });
 
@@ -220,16 +220,16 @@ function populate_xss_fires( offset, limit ) {
     api_request( "GET", "/api/payloadfires", {"offset": offset, "limit": limit}, function( response ) {
         create_paginator_widget( 5, offset, response["total"], ".xss_payload_fires_paginator_div", populate_xss_fires );
         injection_results = response["results"];
-        for( var i = 0; i < response["results"].length; i++ ) {
+        for( let i = 0; i < response["results"].length; i++ ) {
             append_xss_fire_row( response["results"][i] );
         }
         // Sets the image thumbnails to links of the image thumbnails ( to view the full sized image )
-        $(".xss_fire_thumbnail_image_link").click( function() {
+        $(".xss_fire_thumbnail_image_link").on("click",function() {
             this.target = "_blank";
             this.href = this.childNodes[0].src;
         })
 
-        $( ".view_full_report_button" ).click(function() {
+        $( ".view_full_report_button" ).con("click",function() {
             let parent_id = this.parentElement.parentElement.id;
             if( parent_id == expanded_report_id ) {
                 $( ".full_injection_report_expanded" ).remove();
@@ -247,11 +247,11 @@ function populate_collected_pages( offset, limit ) {
     api_request( "GET", "/api/collected_pages", {"offset": offset, "limit": limit}, function( response ) {
         create_paginator_widget( 5, offset, response["total"], ".collected_pages_paginator_div", populate_collected_pages );
         collected_page_data = response["results"];
-        for( var i = 0; i < collected_page_data.length; i++ ) {
+        for( let i = 0; i < collected_page_data.length; i++ ) {
             append_collected_page_row( collected_page_data[i] );
         }
-        $( ".view_full_page_source_button" ).click(function() {
-            var parent_id = this.parentElement.parentElement.id;
+        $( ".view_full_page_source_button" ).on("click",function() {
+            let parent_id = this.parentElement.parentElement.id;
             if( parent_id == expanded_report_id ) {
                 $( ".collected_page_full_page_view" ).remove();
                 expanded_report_id = "";
@@ -351,17 +351,17 @@ function create_paginator_widget( count, offset, total, target_div_selector, pag
 
     $( target_div_selector ).empty().append( paginator );
 
-    $( target_div_selector ).find( ".page_number" ).click(function() {
+    $( target_div_selector ).find( ".page_number" ).on("click",function() {
         current_page_number = parseInt( this.childNodes[0].text );
         page_change_callback( ( current_page_number * 5 ), 5 );
     });
 
-    $( target_div_selector ).find( ".next_page_button" ).click(function() {
+    $( target_div_selector ).find( ".next_page_button" ).on("click",function() {
         next_page = ( parseInt( $( target_div_selector ).find(".page_number.active")[0].childNodes[0].text ) + 1 )
         page_change_callback( ( next_page * 5 ), 5 );
     });
 
-    $( target_div_selector ).find( ".previous_page_button" ).click(function() {
+    $( target_div_selector ).find( ".previous_page_button" ).on("click",function() {
         next_page = ( parseInt( $( target_div_selector ).find(".page_number.active")[0].childNodes[0].text ) - 1 )
         page_change_callback( ( next_page * 5 ), 5 );
     });
@@ -498,7 +498,7 @@ function show_app() {
     var logout_navbar_button = $.parseHTML( '<li><a class="logout_button">Logout</a></li>' )
     $( '.navbar-nav' ).append( logout_navbar_button );
 
-    $( ".logout_button" ).click(function() {
+    $( ".logout_button" ).on("click",function() {
         api_request( "GET", "/api/logout", {}, function() {
             location.reload();
         });
