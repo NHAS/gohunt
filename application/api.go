@@ -326,7 +326,7 @@ func (a *Application) getCollectedPagesHandler(w http.ResponseWriter, r *http.Re
 }
 
 func (a *Application) collectPageHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet && r.Method != http.MethodOptions {
+	if r.Method != http.MethodPost && r.Method != http.MethodOptions {
 		http.NotFound(w, r)
 		return
 	}
@@ -336,7 +336,7 @@ func (a *Application) collectPageHandler(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Access-Control-Allow-Headers", "X-Requested-With")
 
 	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusOK)
+		a.writeJson(w, struct{}{})
 		return
 	}
 

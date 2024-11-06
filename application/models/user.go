@@ -45,7 +45,7 @@ type UserDTO struct {
 	Domain              string   `gorm:"unique;not null" json:"domain"`
 	ChainloadURI        string   `json:"chainload_uri"`
 	OwnerCorrelationKey string   `gorm:"unique" json:"owner_correlation_key"`
-	PageCollectionPaths []string `gorm:"-" json:"page_collection_paths_list"`
+	PageCollectionPaths []string `gorm:"serializer:json" json:"page_collection_paths_list"`
 }
 
 func (u *UserDTO) BeforeCreate(tx *gorm.DB) (err error) {
@@ -74,7 +74,7 @@ type EditUserRequest struct {
 
 	EmailEnabled        bool     `json:"email_enabled"`
 	ChainloadURI        string   `json:"chainload_uri"`
-	PageCollectionPaths []string `gorm:"-" json:"page_collection_paths_list"`
+	PageCollectionPaths []string `json:"page_collection_paths_list"`
 	PGPKey              string   `json:"pgp_key"`
 }
 
