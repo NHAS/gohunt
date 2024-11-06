@@ -252,9 +252,9 @@ function populate_collected_pages( offset, limit ) {
         }
         $( ".view_full_page_source_button" ).on("click",function() {
             let parent_id = this.parentElement.parentElement.id;
-            if( parent_id == expanded_report_id ) {
+            if( parent_id == expanded_collected_page_id ) {
                 $( ".collected_page_full_page_view" ).remove();
-                expanded_report_id = "";
+                expanded_collected_page_id = "";
             } else {
                 display_full_page_report( parent_id );
             }
