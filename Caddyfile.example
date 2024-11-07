@@ -1,6 +1,6 @@
 {
    on_demand_tls {
-     ask http://127.0.0.1:8081/check_domain
+     ask http://gohunt:8081/check_domain
    }
 
 }
@@ -10,7 +10,7 @@
         output stdout
     }
 
-    reverse_proxy 127.0.0.1:8081 
+    reverse_proxy gohunt:8081 
 }
 
 *.{$DOMAIN} {
@@ -24,5 +24,5 @@
         on_demand
     }
 
-    reverse_proxy 127.0.0.1:8081
+    reverse_proxy gohunt:8081
 }

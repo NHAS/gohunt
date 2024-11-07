@@ -22,7 +22,7 @@ services:
       - Database.Port=5432
       - Database.User=gohunt
       - Database.DBname=gohunt
-      - Database.SSLmode=disabled
+      - Database.SSLmode=disable
       - Database.Password=gohunt
     ports:
       - 8081:8081

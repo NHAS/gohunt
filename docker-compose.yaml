@@ -10,7 +10,8 @@ services:
       - db-data:/var/lib/postgresql/data
 
   gohunt: 
-    depends_on: postgres
+    depends_on: 
+      - postgres
     restart: on-failure
     image: ghcr.io/nhas/gohunt:main
     environment:
@@ -26,11 +27,12 @@ services:
       - Database.Port=5432
       - Database.User=gohunt
       - Database.DBname=gohunt
-      - Database.SSLmode=disabled
+      - Database.SSLmode=disable
       - Database.Password=${DB_PASSWORD}
 
   caddy:
-    depends_on: gohunt
+    depends_on: 
+      - gohunt
     restart: on-failure
     image: caddy:2
     ports:
