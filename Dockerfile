@@ -10,6 +10,7 @@ RUN go build
 # Runtime
 FROM redhat/ubi9-micro AS runtime
 
+RUN mkdir /config
 WORKDIR /app
 COPY --from=builder /app/gohunt .
 

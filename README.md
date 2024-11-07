@@ -81,3 +81,84 @@ Thats it!
 GoHunt requires the `X-Forwarded-Proto` and `X-Forwarded-For` headers if running behind a reverse proxy. 
 Caddy, by default sends these headers. 
 To parse `X-Forwarded-For` GoHunt also needs to be configured with how many proxies are in-front of your instance, so please set `number_proxies` in the yaml config, or the `NumberProxies` environment variable
+
+## Environment variables
+
+Here is the list of environment variables that gohunt takes. 
+Please read the `Using config file` section for each environment variable purpose.
+
+`Domain`  
+`ListenAddress`  
+`NumberProxies`  
+`Features.Signup.Enabled`  
+`Features.Oidc.Enabled`  
+`Features.Oidc.PublicURL`  
+`Features.Oidc.IssuerURL`  
+`Features.Oidc.ClientID`  
+`Features.Oidc.ClientSecret`  
+`Features.Oidc.AdminGroupClaimName`  
+`Features.Oidc.AdminGroup`  
+`Notification.SMTP.Enabled`  
+`Notification.SMTP.Host`  
+`Notification.SMTP.Port`  
+`Notification.SMTP.Username`  
+`Notification.SMTP.Password`  
+`Notification.SMTP.FromEmail`  
+`Notification.Webhooks.Enabled`  
+`Notification.Webhooks.SafeDomains`  
+`Notification.Confidential`  
+`Database.Host`  
+`Database.Port`  
+`Database.User`  
+`Database.DBname`  
+`Database.SSLmode`  
+`Database.Password`  
+
+
+## Using config file
+
+If you want to use a yaml config file instead of passing everything via `ENV` variables, use the `config.yaml.example` as a template, and add the following to your docker compose in the `gohunt` section:
+
+```yaml
+volumes:
+    - ./config.yaml:/config/config.yaml:ro
+```
+
+The following is all the configuration options and their purpose:
+```yaml
+domain:         (string) Your gohunt instance domain (add port if not default 443/80)
+listen_address: (string) The ip:port combination start the golang http server on
+number_proxies: (int)    Used to parse X-Forwarded-For
+features: 
+  signup:
+      enabled: (bool) Enable or disable account creation
+  oidc:
+   enabled:                (bool)   Enable or disable OIDC SSO integration
+   public_url:             (string) URL of Gohunt instance (option can be determined from domain)
+   issuer_url:             (string) Identity provider URL
+   client_id:              (string) OIDC Client ID
+   client_secret:          (string) OIDC Client Secret
+   admin_group_claim_name: (string) Claim with user groups in it (optional)
+   admin_group_name:       (string) Group that indicates user should be administrator of instance (optional)
+
+  notification:
+    confidential:   (bool) Whether to add xss vulnerablity details to notification
+    smtp:
+      enabled:      (bool)   Enable or disable sending notifications via SMTP
+	  host:         (string) Host domain/ip
+	  port:         (int)    Port
+	  username:     (string) Mailing username
+	  password:     (string) Mailing password
+	  from:         (string) The sending email address
+    webhooks:
+      enabled:      (bool) Enable or disable sending notifications via webhooks
+      safe_domains: (string array) List of domains that are safe to send to, defaults to [discord.com, slack.com]
+
+  database:
+	  host:     (string) Host domain/ip
+	  port:     (string) Port
+	  user:     (string) Database user
+      password: (string) Database user password
+	  dbname:   (string) Which database to use
+	  sslmode:  (string) postgres sslmode
+```
