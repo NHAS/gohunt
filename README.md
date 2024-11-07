@@ -145,20 +145,20 @@ features:
     confidential:   (bool) Whether to add xss vulnerablity details to notification
     smtp:
       enabled:      (bool)   Enable or disable sending notifications via SMTP
-	  host:         (string) Host domain/ip
-	  port:         (int)    Port
-	  username:     (string) Mailing username
-	  password:     (string) Mailing password
-	  from:         (string) The sending email address
+      host:         (string) Host domain/ip
+      port:         (int)    Port
+      username:     (string) Mailing username
+      password:     (string) Mailing password
+      from:         (string) The sending email address
     webhooks:
       enabled:      (bool) Enable or disable sending notifications via webhooks
       safe_domains: (string array) List of domains that are safe to send to, defaults to [discord.com, slack.com]
 
   database:
-	  host:     (string) Host domain/ip
-	  port:     (string) Port
-	  user:     (string) Database user
-      password: (string) Database user password
-	  dbname:   (string) Which database to use
-	  sslmode:  (string) postgres sslmode
+     host:     (string) Host domain/ip
+     port:     (string) Port
+     user:     (string) Database user
+     password: (string) Database user password
+     dbname:   (string) Which database to use
+     sslmode:  (string) postgres sslmode
 ```
