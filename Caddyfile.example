@@ -1,0 +1,28 @@
+{
+   on_demand_tls {
+     ask http://127.0.0.1:8081/check_domain
+   }
+
+}
+
+{$DOMAIN} {
+    log {
+        output stdout
+    }
+
+    reverse_proxy 127.0.0.1:8081 
+}
+
+*.{$DOMAIN} {
+
+    # Log all requests
+    log {
+        output stdout
+    }
+
+    tls {
+        on_demand
+    }
+
+    reverse_proxy 127.0.0.1:8081
+}

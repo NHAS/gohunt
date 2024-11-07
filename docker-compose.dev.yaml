@@ -16,7 +16,6 @@ services:
       # Settings that can be configured either from the docker env, or config file
       - Domain=${DOMAIN}
       - ListenAddress=:8081
-      - NumberProxies=1
       - Features.Signup.Enabled=true
       - Notification.Webhooks.Enabled=true
       - Database.Host=postgres
@@ -25,18 +24,8 @@ services:
       - Database.DBname=gohunt
       - Database.SSLmode=disabled
       - Database.Password=gohunt
-
-  caddy:
-    image: caddy:2
     ports:
-      - 80:80
-      - 443:443
-    environment:
-      - DOMAIN=${DOMAIN}
-    volumes:
-      - caddy-data:/data
-      - caddy_config:/config
-      - ./Caddyfile.example:/etc/caddy/Caddyfile
+      - 8081:8081
 
 volumes:
   db-data:

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/NHAS/gohunt/config"
 	"github.com/gorilla/mux"
 	"github.com/zitadel/oidc/v3/pkg/client/rp"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/NHAS/session"
 	"github.com/google/uuid"
@@ -60,6 +62,48 @@ func New(c config.Config) (*Application, error) {
 	db.AutoMigrate(&models.User{}, &models.Injection{}, &models.InjectionRequest{}, &models.CollectedPage{})
 
 	newApplication.db = db
+
+	if os.Getenv("GOHUNT_USERNAME") != "" {
+
+		var count int64
+		if err := db.Model(&models.User{}).Count(&count).Error; err != nil {
+			log.Println("failed to count users", err)
+			return nil, fmt.Errorf("failed to count users: %s", err)
+		}
+
+		//  No users, time to make at least one admin
+		if count == 0 {
+			firstUserName := os.Getenv("GOHUNT_USERNAME")
+
+			potentialPassword := os.Getenv("GOHUNT_PASSWORD")
+			if potentialPassword == "" {
+				potentialPassword = newApplication.generateRandom(16)
+				log.Println("GOHUNT_PASSWORD: ", potentialPassword)
+			}
+
+			// Create new user
+			user := models.User{
+				UserDTO: models.UserDTO{
+					Username: firstUserName,
+					Email:    firstUserName + "@" + firstUserName,
+					Domain:   firstUserName,
+					IsAdmin:  true,
+				},
+			}
+
+			b, err := bcrypt.GenerateFromPassword([]byte(potentialPassword), 10)
+			if err != nil {
+				return nil, fmt.Errorf("failed to generate password hash: %s", err)
+			}
+
+			user.Password = string(b)
+
+			if err := db.Create(&user).Error; err != nil {
+				return nil, fmt.Errorf("failed to save first user in database: %s", err)
+			}
+		}
+
+	}
 
 	if c.Features.Oidc.Enabled {
 
