@@ -17,6 +17,7 @@ import (
 
 	"github.com/NHAS/gohunt/application/models"
 	"github.com/NHAS/gohunt/application/resources/notifications"
+	"github.com/google/uuid"
 	"github.com/zitadel/oidc/v3/pkg/client/rp"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 
@@ -1171,10 +1172,33 @@ func (a *Application) adminDeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := a.deleteUserData(deletedUser.UUID, deletedUser.OwnerCorrelationKey); err != nil {
+		log.Println("failed to clear user data after user has been deleted: ", err)
+		models.Message(w, false, "Not found")
+		return
+	}
+
 	log.Printf("Admin deleted User %q (%s)", deletedUser.Username, deletedUser.UUID)
 
 	models.Message(w, true, "User deleted!")
 
+}
+
+func (a *Application) deleteUserData(UUID uuid.UUID, OwnerCorrelationKey string) error {
+	var errs []error
+	if err := a.db.Unscoped().Where("owner_id = ?", UUID).Delete(&models.Injection{}).Error; err != nil {
+		errs = append(errs, fmt.Errorf("failed to delete injections: %s", err))
+	}
+
+	if err := a.db.Unscoped().Where("owner_id = ?", UUID).Delete(&models.CollectedPage{}).Error; err != nil {
+		errs = append(errs, fmt.Errorf("failed to collected pages: %s", err))
+	}
+
+	if err := a.db.Unscoped().Where("owner_correlation_key = ?", OwnerCorrelationKey).Delete(&models.InjectionRequest{}).Error; err != nil {
+		errs = append(errs, fmt.Errorf("failed to delete injection requests: %s", err))
+	}
+
+	return errors.Join(errs...)
 }
 
 func (a *Application) adminDeleteUserData(w http.ResponseWriter, r *http.Request) {
@@ -1199,23 +1223,8 @@ func (a *Application) adminDeleteUserData(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := a.db.Unscoped().Where("owner_id = ?", userDataToDelete.UUID).Delete(&models.Injection{}).Error; err != nil {
-		log.Println("failed", err)
-
-		models.Message(w, false, "Not found")
-		return
-	}
-
-	if err := a.db.Unscoped().Where("owner_id = ?", userDataToDelete.UUID).Delete(&models.CollectedPage{}).Error; err != nil {
-		log.Println("failed", err)
-
-		models.Message(w, false, "Not found")
-		return
-	}
-
-	if err := a.db.Unscoped().Where("owner_correlation_key = ?", targetUser.OwnerCorrelationKey).Delete(&models.InjectionRequest{}).Error; err != nil {
-		log.Println("failed", err)
-
+	if err := a.deleteUserData(targetUser.UUID, targetUser.OwnerCorrelationKey); err != nil {
+		log.Println("failed to clear user data: ", err)
 		models.Message(w, false, "Not found")
 		return
 	}

@@ -13,12 +13,12 @@ features:
     public_url: http://localhost:8081/
     issuer_url: http://localhost:8080/realms/Test
     client_id: gohunt
-    client_secret: 
+    client_secret: O7rzlwcetxu4M135KeqOXDGCqDCbObMB
     admin_group_claim_name: groups 
     admin_group_name: gohunt_adm
 
 notification:
-  confidential: true
+  confidential: false
   smtp:
     enabled: false
     from: no-reply@example.com

@@ -365,8 +365,8 @@ function append_user_row(user_data) {
     $("#delete_user_button_" + user_data["UUID"]).on("click", function () {
         api_request("DELETE", "/api/admin/users", { "UUID": user_data["UUID"] }, function (response) {
             delete_user(user_data["UUID"]);
-            $("#" + user_data["UUID"]).fadeOut();
-            $("#" + user_data["UUID"]).remove();
+            $("#delete_user_button_" + user_data["UUID"]).fadeOut();
+            $("#delete_user_button_" + user_data["UUID"]).remove();
             if (edit_user_id == user_data["UUID"]) {
                 $(".user_full_page_view").remove();
             }
