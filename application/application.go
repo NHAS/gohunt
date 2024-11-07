@@ -179,6 +179,8 @@ func (a *Application) Run() error {
 
 	adminPages := http.NewServeMux()
 	adminPages.HandleFunc("GET /users", a.adminGetAllUsers)
+	adminPages.HandleFunc("PUT /users", a.adminEditUser)
+
 	adminPages.HandleFunc("DELETE /users", a.adminDeleteUser)
 	adminPages.HandleFunc("DELETE /users/data", a.adminDeleteUserData)
 

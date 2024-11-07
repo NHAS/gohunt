@@ -22,19 +22,6 @@ func (a *Application) app(w http.ResponseWriter, r *http.Request) {
 				t, _ := a.store.GenerateCSRFTokenTemplateHTML(r)
 				return t
 			},
-			"isAdmin": func() bool {
-				_, s := a.store.GetSessionFromRequest(r)
-				if s == nil {
-					return false
-				}
-
-				var newUser models.User
-				if err := a.db.Where("uuid = ?", s.UUID).First(&newUser).Error; err != nil {
-					return false
-				}
-
-				return newUser.IsAdmin
-			},
 			"isSSOUser": func() bool {
 				_, s := a.store.GetSessionFromRequest(r)
 				if s == nil {

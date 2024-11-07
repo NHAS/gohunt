@@ -149,7 +149,7 @@ function is_safe_uri(url) {
 
 function display_bulk_delete() {
 
-    let bulkDeleteDialog = $.parseHTML('<form id="bulkDeleteForm" class="pt-4"> <p class="help-block">Enter in either an IP or page URI below to select multiple records to delete.</p>    <div class="form-group">      <label for="ip">IP</label>       <input type="text" class="form-control" id="ip" placeholder="Entries from victim ip to delete">    </div>    <div class="form-group">       <label for="pageURI">Page URI</label>       <input type="text" class="form-control" id="pageURI" placeholder="Entires with page URI to delete">     </div>         <p class="help-block hidden" id="totalRecords"></p>     <button type="submit" class="btn btn-danger" id="bulk-delete-button"><span class="glyphicon glyphicon-trash"></span> Bulk Delete</button>  </form>')[0];
+    let bulkDeleteDialog = $.parseHTML('<form id="bulkDeleteForm" class="pt-4"> <p class="help-block">Enter in either an IP or page URI below to select multiple records to delete.</p><div class="form-group"><label for="ip">IP</label><input type="text" class="form-control" id="ip" placeholder="Entries from victim ip to delete">    </div>    <div class="form-group"><label for="pageURI">Page URI</label><input type="text" class="form-control" id="pageURI" placeholder="Entires with page URI to delete"></div><button type="submit" class="btn btn-danger" id="bulk-delete-button"><span class="glyphicon glyphicon-trash"></span> Bulk Delete</button>  </form>')[0];
 
     let currentForm = $('#bulkDeleteForm')
     if (currentForm.length > 0) {
@@ -188,6 +188,55 @@ function display_bulk_delete() {
 
 
     })
+}
+
+function display_full_user(id) {
+    expanded_report_id = id;
+
+    $(".user_full_page_view").remove();
+    let edit_user_display = $.parseHTML('<tr class="user_full_page_view"><td class="user_full_pag_container" colspan="4"><div class="panel panel-default"><div class="user_full_page_top_panel panel-heading">  <h3 class="panel-title">Options</h3></div><div class="user_full_page_body panel-body">  <form id="editUserForm">    <p class="help-block">Change user details/settings here. Empty values will not remove existing value</p>    <div class="form-group"> <label for="userPassword">Password</label> <input type="password" class="form-control" id="userPassword-'+id+'" placeholder="New user password"> </div>    <div class="form-group"> <label for="userDomain">Domain</label> <input type="text" class="form-control" id="userDomain-'+id+'" placeholder="Users domain"></div>     <div class="form-group"> <label for="isAdmin">Admin</label> <input type="checkbox" id="isAdmin-'+id+'"></div><button type="submit" class="btn btn-primary" id="save-user-changes-button-'+id+'"><span class="glyphicon glyphicon-ok"></span> Save</button>  </form></div>          </div>        </td>      </tr>')[0];
+    
+    let i = users.findIndex(user => user.UUID == id)
+    let user = users[i]
+
+    $('#users_data_table > tbody > tr').eq(i).after(edit_user_display.outerHTML);
+
+    if(user.is_admin) {
+        $("#userPassword-"+id).prop('readonly', true);
+    }
+
+    $("#userDomain-"+id).val(user.domain)
+    $("#isAdmin-"+id).prop("checked", user.is_admin)
+
+    $("#save-user-changes-button-"+id).on("click", function (e) {
+        e.preventDefault()
+        let data = {
+            "UUID": id,
+            "new_password": $("#userPassword-"+id).val(),
+            "domain": $("#userDomain-"+id).val(),
+            "is_admin": $("#isAdmin-"+id).is(":checked"),
+        }
+
+        api_request("PUT", "/api/admin/users", data, function (response) {
+            if (response["success"] == false) {
+                $(".invalid_fields").text(response["message"])
+                $(".bad_account_update_dialogue").fadeIn();
+                setTimeout(function () {
+                    $(".bad_account_update_dialogue").fadeOut();
+                }, 40000);
+            } else {
+                $(".updated_settings_success_dialogue").fadeIn();
+                setTimeout(function () {
+                    $(".updated_settings_success_dialogue").fadeOut();
+                }, 5000);
+            }
+        });
+    })
+
+    prettyPrint();
+    $('html, body').animate({
+        scrollTop: $("#" + id).offset().top - 60
+    }, 500);
 }
 
 function display_full_report(id) {
@@ -366,8 +415,9 @@ function append_collected_page_row(collected_page_data) {
 
 
 function append_user_row(user_data) {
-    let user_row = $.parseHTML('<tr class="user_row_template">  <td class="full_name_column"><span class="full_name"></span></td>  <td class="email_column"><a class="user_email"></a></td>  <td class="attributes_column"><span class="attributes"></span></td>  <td class="user_options_column">    <button type="button" class="edit_user_button btn btn-info btn-block"><span class="glyphicon glyphicon-edit"></span> Edit User</button>    <button type="button" id="clear_data_button_' + user_data["UUID"] + '" class="btn btn-warning btn-block"><span class="glyphicon glyphicon-repeat"></span> Clear Data</button>    <button type="button" id="delete_user_button_' + user_data["UUID"] + '" class="btn btn-danger btn-block"><span class="glyphicon glyphicon-trash"></span> Delete</button>  </td></tr>')[0];
+    let user_row = $.parseHTML('<tr class="user_row_template"> <td class="username_column"><span class="username"></span></td>  <td class="full_name_column"><span class="full_name"></span></td>  <td class="email_column"><a class="user_email"></a></td>  <td class="attributes_column"><span class="attributes"></span></td>  <td class="user_options_column">    <button type="button" class="edit_user_button btn btn-info btn-block"><span class="glyphicon glyphicon-edit"></span> Edit User</button>    <button type="button" id="clear_data_button_' + user_data["UUID"] + '" class="btn btn-warning btn-block"><span class="glyphicon glyphicon-repeat"></span> Clear Data</button>    <button type="button" id="delete_user_button_' + user_data["UUID"] + '" class="btn btn-danger btn-block"><span class="glyphicon glyphicon-trash"></span> Delete</button>  </td></tr>')[0];
     user_row.id = user_data["UUID"];
+    user_row.querySelector(".username").innerText = user_data["username"];
     user_row.querySelector(".full_name").innerText = user_data["full_name"];
     user_row.querySelector(".user_email").innerText = user_data["email"];
     user_row.querySelector(".attributes").innerText = user_data["attributes"].join(", ");
@@ -490,7 +540,7 @@ function update_account_setings() {
     USER.full_name = $("#full_name").val();
     USER.pgp_key = $("#pgp-key").val();
     USER.email = $("#email").val(),
-        USER.page_collection_paths_list = $("#page_collection_paths_list").val().split(/\r?\n/);
+    USER.page_collection_paths_list = $("#page_collection_paths_list").val().split(/\r?\n/);
     USER.chainload_uri = $("#chainload_uri").val();
     USER.email_enabled = $('#email_enabled').is(':checked');
 
@@ -621,14 +671,27 @@ function show_app() {
     populate_xss_fires(0, 5);
     populate_collected_pages(0, 5);
     get_user_data(function () {
+
+        if(USER != null && USER.is_admin) {
+            $("#users").removeClass("hidden")
+            $("#usersTableHeading").removeClass("hidden")
+            populate_users(0,5)
+        } else {
+            if(!$("#users").hasClass("hidden")) {
+                $("#users").addClass("hidden")
+            }
+
+            if(!$("#usersTableHeading").hasClass("hidden")) {
+                $("#usersTableHeading").addClass("hidden")
+            }
+        }
+
         $(".login-in-form").fadeOut(function () {
             $(".xsshunter_application").fadeIn();
         });
     });
 
-    if(USER != null && USER.is_admin) {
-        populate_users(0,5)
-    }
+
 }
 
 function show_password_reset() {

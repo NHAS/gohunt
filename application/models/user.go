@@ -92,8 +92,11 @@ const (
 
 type AdminUserDTO struct {
 	Base
+	Username   string   `json:"username"`
+	Domain     string   `json:"domain"`
 	FullName   string   `json:"full_name"`
 	Email      string   `json:"email"`
+	IsAdmin    bool     `json:"is_admin"`
 	Attributes []string `json:"attributes"`
 }
 
@@ -101,4 +104,11 @@ type GetUsersResponse struct {
 	Results []AdminUserDTO `json:"results"`
 	Success bool           `json:"success"`
 	Total   int64          `json:"total"`
+}
+
+type AdminEditUserRequest struct {
+	Base
+	NewPassword string `json:"new_password"`
+	Domain      string `json:"domain"`
+	IsAdmin     bool   `json:"is_admin"`
 }

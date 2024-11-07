@@ -728,7 +728,7 @@ func (a *Application) editUserInformationHandler(w http.ResponseWriter, r *http.
 	user.PageCollectionPaths = editReq.PageCollectionPaths
 	user.PGPKey = editReq.PGPKey
 
-	if err := a.db.Updates(user).Error; err != nil {
+	if err := a.db.Save(user).Error; err != nil {
 		log.Println("failed to save updated user object: ", err)
 		models.Message(w, false, fmt.Sprintf("Failed to save user: %s", err))
 		return
@@ -1131,6 +1131,9 @@ func (a *Application) adminGetAllUsers(w http.ResponseWriter, r *http.Request) {
 		userDto.UUID = users[i].UUID
 		userDto.FullName = users[i].FullName
 		userDto.Email = users[i].Email
+		userDto.Domain = users[i].Domain
+		userDto.IsAdmin = users[i].IsAdmin
+		userDto.Username = users[i].Username
 
 		userDto.Attributes = []string{}
 
@@ -1184,6 +1187,67 @@ func (a *Application) adminDeleteUser(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Admin deleted User %q (%s)", deletedUser.Username, deletedUser.UUID)
 
 	models.Message(w, true, "User deleted!")
+
+}
+
+func (a *Application) adminEditUser(w http.ResponseWriter, r *http.Request) {
+	user := a.getAuthenticatedUser(r)
+	if user == nil || !user.IsAdmin {
+		http.NotFound(w, r)
+		return
+	}
+
+	var userDetailsToUpdate models.AdminEditUserRequest
+	err := jsonDecoder(r.Body).Decode(&userDetailsToUpdate)
+	if err != nil {
+		models.Message(w, false, "Bad Request")
+		return
+	}
+
+	var userToEdit models.User
+	if err := a.db.Where("uuid = ?", userDetailsToUpdate.UUID).First(&userToEdit).Error; err != nil {
+		log.Println("failed", err)
+
+		models.Message(w, false, "Not found")
+		return
+	}
+
+	if userToEdit.IsAdmin {
+		models.Message(w, false, "Cannot edit admin user details")
+		return
+	}
+
+	if userToEdit.UUID == user.UUID {
+		models.Message(w, false, "Cannot edit own details")
+		return
+	}
+
+	userToEdit.IsAdmin = userDetailsToUpdate.IsAdmin
+	if userDetailsToUpdate.Domain != "" {
+		userToEdit.Domain = userDetailsToUpdate.Domain
+	}
+
+	if userDetailsToUpdate.NewPassword != "" {
+
+		b, err := bcrypt.GenerateFromPassword([]byte(userDetailsToUpdate.NewPassword), 10)
+		if err != nil {
+			models.Message(w, false, "Server Error")
+			return
+		}
+
+		userToEdit.Password = string(b)
+	}
+
+	if err := a.db.Save(&userToEdit).Error; err != nil {
+		log.Println("failed", err)
+
+		models.Message(w, false, "Not found")
+		return
+	}
+
+	log.Printf("Admin edit User %q (%s)", userToEdit.Username, userToEdit.UUID)
+
+	models.Message(w, true, "User edited!")
 
 }
 
