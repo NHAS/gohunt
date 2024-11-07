@@ -52,9 +52,3 @@ func (a *Application) signup(w http.ResponseWriter, r *http.Request) {
 		log.Println("failed: ", err)
 	}
 }
-
-func (a *Application) contact(w http.ResponseWriter, r *http.Request) {
-	if err := ui.RenderDefaults(w, r, nil, models.UIOptions(a.config), "contact.htm"); err != nil {
-		log.Println("failed: ", err)
-	}
-}

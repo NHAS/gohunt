@@ -10,7 +10,9 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -723,10 +725,32 @@ func (a *Application) editUserInformationHandler(w http.ResponseWriter, r *http.
 		user.Email = editReq.Email
 	}
 
+	if len(editReq.WebhooksList) > 30 {
+		models.Message(w, false, "Too many webhooks (>30)")
+		return
+	}
+
+	for _, webhookUrl := range editReq.WebhooksList {
+		u, err := url.Parse(webhookUrl)
+		if err != nil {
+			models.Message(w, false, fmt.Sprintf("Could not partse URL: %q", webhookUrl))
+			return
+		}
+
+		if !slices.Contains(a.config.Notification.Webhook.SafeDomains, u.Host) {
+			models.Message(w, false, fmt.Sprintf("Webhook %q is not one of the safe domains %v", webhookUrl, a.config.Notification.Webhook.SafeDomains))
+			return
+		}
+	}
+
 	user.EmailEnabled = editReq.EmailEnabled
 	user.ChainloadURI = editReq.ChainloadURI
 	user.PageCollectionPaths = editReq.PageCollectionPaths
 	user.PGPKey = editReq.PGPKey
+
+	user.WebhooksList = editReq.WebhooksList
+
+	user.WebhooksEnabled = editReq.WebhookEnabled
 
 	if err := a.db.Save(user).Error; err != nil {
 		log.Println("failed to save updated user object: ", err)
@@ -753,16 +777,23 @@ func (a *Application) editUserInformationHandler(w http.ResponseWriter, r *http.
 	a.writeJson(w, response)
 }
 
-func (a *Application) sendJSPGPMail(to string, pgpMessage string) {
+func (a *Application) sendJSPGPNotification(user models.User, pgpMessage string) {
 
 	// Confedential mode is fine with sending a pgp encrypted message
-	go a.sendMail(to, "[Go Hunt] XSS Payload Message (PGP Encrypted)", "text/plain", pgpMessage)
+	const title = "[Go Hunt] XSS Payload Message (PGP Encrypted)"
+	go a.sendMail(user, title, "text/plain", pgpMessage)
+	go a.sendWebhook(user, title, pgpMessage)
+
 }
 
-func (a *Application) sendJSInjectionMail(to string, injection models.Injection) {
+func (a *Application) sendJSInjectionNotification(user models.User, injection models.Injection) {
 
 	if a.config.Notification.Confidential {
-		go a.sendMail(to, "[Go Hunt] XSS Payload Fired", "text/plain", "An XSS fired, you should check it out on https://"+a.config.Domain+" (confidential mode is on, no details will be reported via notification)")
+		title := "[Go Hunt] XSS Payload Fired"
+		message := "An XSS fired, you should check it out on https://" + a.config.Domain + " (confidential mode is on, no details will be reported via notification)"
+		go a.sendMail(user, title, "text/plain", message)
+		go a.sendWebhook(user, title, message)
+
 		return
 	}
 
@@ -772,29 +803,65 @@ func (a *Application) sendJSInjectionMail(to string, injection models.Injection)
 		return
 	}
 
-	go a.sendMail(to, fmt.Sprintf("[Go Hunt] XSS Payload Fired On %q", injection.VulnerablePage), "text/html", content)
+	title := fmt.Sprintf("[Go Hunt] XSS Payload Fired On %q", injection.VulnerablePage)
+	go a.sendMail(user, title, "text/html", content)
+
+	// Got lazy
+	b, _ := json.MarshalIndent(injection, "", "   ")
+	go a.sendWebhook(user, title, string(b))
 }
 
-func (a *Application) sendMail(to, subject, contentType string, content ...string) {
-	// Create a new message
-	message := gomail.NewMessage()
+func (a *Application) sendMail(user models.User, to, subject, contentType string, content ...string) {
+	if a.config.Notification.SMTP.Enabled && user.EmailEnabled {
 
-	// Set email headers
-	message.SetHeader("From", a.config.Notification.SMTP.FromEmail)
-	message.SetHeader("To", to)
-	message.SetHeader("Subject", subject)
+		// Create a new message
+		message := gomail.NewMessage()
 
-	// Set email body
-	message.SetBody(contentType, strings.Join(content, "\n"))
+		// Set email headers
+		message.SetHeader("From", a.config.Notification.SMTP.FromEmail)
+		message.SetHeader("To", to)
+		message.SetHeader("Subject", subject)
 
-	// Set up the SMTP dialer
-	dialer := gomail.NewDialer(a.config.Notification.SMTP.Host, a.config.Notification.SMTP.Port, a.config.Notification.SMTP.Username, a.config.Notification.SMTP.Password)
+		// Set email body
+		message.SetBody(contentType, strings.Join(content, "\n"))
 
-	// Send the email
-	if err := dialer.DialAndSend(message); err != nil {
-		log.Println("failed to send email: ", err)
-	} else {
-		log.Println("Email notification sent successfully!")
+		// Set up the SMTP dialer
+		dialer := gomail.NewDialer(a.config.Notification.SMTP.Host, a.config.Notification.SMTP.Port, a.config.Notification.SMTP.Username, a.config.Notification.SMTP.Password)
+
+		// Send the email
+		if err := dialer.DialAndSend(message); err != nil {
+			log.Println("failed to send email: ", err)
+		} else {
+			log.Println("Email notification sent successfully!")
+		}
+	}
+}
+
+func (a *Application) sendWebhook(user models.User, title string, content ...string) {
+	if a.config.Notification.Webhook.Enabled && user.WebhooksEnabled {
+		wrapper := struct {
+			Full string
+			Text string `json:"text"`
+		}{
+			Full: strings.Join(content, "\n"),
+			Text: title,
+		}
+		webhookMessage, _ := json.Marshal(wrapper)
+
+		go func() {
+			for _, webhook := range user.WebhooksList {
+
+				client := http.Client{
+					Timeout: 2 * time.Second,
+				}
+
+				buff := bytes.NewBuffer(webhookMessage)
+				_, err := client.Post(webhook, "application/json", buff)
+				if err != nil {
+					log.Printf("Error sending webhook '%s': %s", webhook, err)
+				}
+			}
+		}()
 	}
 }
 
@@ -851,33 +918,6 @@ func (a *Application) getXSSPayloadFiresHandler(w http.ResponseWriter, r *http.R
 	a.writeJson(w, response)
 }
 
-func (a *Application) contactUsHandler(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-	if a.config.Features.Contact.Enabled {
-
-		var contact models.ContactRequest
-		err := jsonDecoder(r.Body).Decode(&contact)
-		if err != nil {
-			http.Error(w, "Bad Request", http.StatusBadRequest)
-			return
-		}
-
-		//TODO rate limit and recaptcha this
-
-		sendMail := a.config.Notification.SMTP.Enabled && a.config.Features.Contact.AbuseEmail != ""
-		if sendMail {
-
-			message := fmt.Sprintf("Name: %q\n", contact.Name)
-			message += fmt.Sprintf("Email: %q\n", contact.Email)
-			message += fmt.Sprintf("Body: %q\n", contact.Body)
-
-			go a.sendMail(a.config.Features.Contact.AbuseEmail, "GoHunt Contact Form Submission", "text/plain", message)
-		}
-
-		models.Boolean(w, true)
-	}
-}
-
 func (a *Application) resendInjectionEmailHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
@@ -901,9 +941,7 @@ func (a *Application) resendInjectionEmailHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	if user.EmailEnabled && a.config.Notification.SMTP.Enabled {
-		a.sendJSInjectionMail(user.Email, userInjection)
-	}
+	a.sendJSInjectionNotification(*user, userInjection)
 
 	log.Printf("User just requested to resend the injection record email for URI: %q", userInjection.VulnerablePage)
 	models.Message(w, true, "Email sent!")
@@ -1046,9 +1084,9 @@ func (a *Application) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if bytes.HasPrefix(contents, []byte("-----BEGIN PGP MESSAGE-----")) && ownerUser.EmailEnabled && a.config.Notification.SMTP.Enabled {
+	if bytes.HasPrefix(contents, []byte("-----BEGIN PGP MESSAGE-----")) {
 		log.Printf("User %q just got a PGP encrypted XSS callback, passing it along.", ownerUser.Username)
-		a.sendJSPGPMail(ownerUser.Email, string(contents))
+		a.sendJSPGPNotification(*ownerUser, string(contents))
 		a.writeJson(w, struct{}{})
 		return
 	}
@@ -1081,10 +1119,8 @@ func (a *Application) callbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("User %q just got an XSS callback for URI %q", ownerUser.Username, newInjection.VulnerablePage)
 
-	if ownerUser.EmailEnabled && a.config.Notification.SMTP.Enabled {
-		// Runs in its own goroutine
-		a.sendJSInjectionMail(ownerUser.Email, newInjection)
-	}
+	// Runs in its own goroutine
+	a.sendJSInjectionNotification(*ownerUser, newInjection)
 
 	a.writeJson(w, struct{}{})
 }

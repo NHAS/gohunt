@@ -3,9 +3,6 @@ listen_address: 127.0.0.1:8081
 number_proxies: 1
 
 features:
-  contact:
-    enabled: true
-    abuse_email: contact@example.com
   signup:
     enabled: true
   oidc: 

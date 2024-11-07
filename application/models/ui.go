@@ -1,20 +1,26 @@
 package models
 
-import "github.com/NHAS/gohunt/config"
+import (
+	"strings"
+
+	"github.com/NHAS/gohunt/config"
+)
 
 type UIoptions struct {
-	Domain                string
-	CanContact, CanSignup bool
+	Domain    string
+	CanSignup bool
+
+	TrustedWebhookDomains string
 
 	SSO bool
 }
 
 func UIOptions(c config.Config) UIoptions {
 	return UIoptions{
-		Domain:     c.Domain,
-		CanContact: c.Features.Contact.Enabled,
-		CanSignup:  c.Features.Signup.Enabled,
+		Domain:    c.Domain,
+		CanSignup: c.Features.Signup.Enabled,
 
-		SSO: c.Features.Oidc.Enabled,
+		TrustedWebhookDomains: strings.Join(c.Notification.Webhook.SafeDomains, ","),
+		SSO:                   c.Features.Oidc.Enabled,
 	}
 }

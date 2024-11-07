@@ -46,7 +46,10 @@ type UserDTO struct {
 	ChainloadURI        string   `json:"chainload_uri"`
 	OwnerCorrelationKey string   `gorm:"unique" json:"owner_correlation_key"`
 	PageCollectionPaths []string `gorm:"serializer:json" json:"page_collection_paths_list"`
-	IsAdmin             bool     `json:"is_admin"`
+	WebhooksList        []string `gorm:"serializer:json" json:"webhooks"`
+	WebhooksEnabled     bool     `json:"webhooks_enabled"`
+
+	IsAdmin bool `json:"is_admin"`
 
 	SSOSubject string `gorm:"unqiue" json:"sso_subject"`
 }
@@ -79,6 +82,9 @@ type EditUserRequest struct {
 	ChainloadURI        string   `json:"chainload_uri"`
 	PageCollectionPaths []string `json:"page_collection_paths_list"`
 	PGPKey              string   `json:"pgp_key"`
+
+	WebhooksList   []string `json:"webhooks_list"`
+	WebhookEnabled bool     `json:"webhook_enabled"`
 }
 
 type LoginUserRequest struct {

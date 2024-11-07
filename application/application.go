@@ -156,11 +156,6 @@ func (a *Application) Run() error {
 		managementDomain.HandleFunc("/api/register", a.registerHandler).Methods("POST")
 	}
 
-	if a.config.Features.Contact.Enabled {
-		managementDomain.HandleFunc("/contact", a.contact).Methods("GET")
-		managementDomain.HandleFunc("/api/contactus", a.contactUsHandler).Methods("POST")
-	}
-
 	// Health check
 	managementDomain.HandleFunc("/health", a.healthHandler).Methods("GET")
 

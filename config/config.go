@@ -16,11 +16,6 @@ type Config struct {
 	NumberProxies int `yaml:"number_proxies"`
 
 	Features struct {
-		Contact struct {
-			Enabled    bool   `yaml:"enabled"`
-			AbuseEmail string `yaml:"abuse_email"`
-		}
-
 		Signup struct {
 			Enabled bool `yaml:"enabled"`
 		}
@@ -45,6 +40,11 @@ type Config struct {
 			Username  string `yaml:"username"`
 			Password  string `yaml:"password"`
 			FromEmail string `yaml:"from"`
+		}
+
+		Webhook struct {
+			Enabled     bool     `yaml:"enabled"`
+			SafeDomains []string `yaml:"safe_domains"`
 		}
 
 		Confidential bool `yaml:"confidential"`
@@ -76,6 +76,10 @@ func LoadConfig(path string) (c Config, err error) {
 	if err != nil {
 		err = fmt.Errorf("error decoding config: %s", err)
 		return
+	}
+
+	if len(c.Notification.Webhook.SafeDomains) == 0 {
+		c.Notification.Webhook.SafeDomains = []string{"discord.com", "slack.com"}
 	}
 
 	return

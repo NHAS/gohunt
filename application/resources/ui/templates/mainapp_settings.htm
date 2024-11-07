@@ -13,6 +13,26 @@
 <label for="email">Email</label><br>
 <input id="email" class="form-control" name="email" {{if isSSOUser}}readonly="readonly"{{end}} placeholder="hacker@thegibson.com" type="email">
 
+<label for="email_enabled">Email upon XSS payload fire?</label><br>
+<label class="email_enabled_toggle toggle">
+    <input id="email_enabled" type="checkbox" checked="">
+    <span class="handle"></span>
+</label>
+<br />
+<br />
+
+<label for="webhooks_list">Webhooks <code>(trusted domains {{ .TrustedWebhookDomains }})</code> <span title="Webhooks" data-toggle="popover" data-placement="top" data-content="This is a list of URLs to send slack compatiable webhook messages." class="glyphicon glyphicon-question-sign" aria-hidden="true"></span></label><br>
+<textarea id="webhooks_list" name="webhooks_list" class="form-control" rows="3" placeholder="https://discord.com/...&#13;&#10;https://slack.com/...&#13;&#10;..."></textarea>
+<br />
+
+<label for="webhook_enabled">Send webhook upon XSS payload fire?</label><br>
+<label class="email_enabled_toggle toggle">
+    <input id="webhook_enabled" type="checkbox" checked="">
+    <span class="handle"></span>
+</label>
+<br />
+<br />
+
 <label for="domain">Custom <code>{{ .Domain }}</code> Subdomain <span title="XSS Payload Domain" data-toggle="popover" data-placement="top" data-content="Your custom GoHunt subdomain which identifies your injections. (<script src=//custom.{{ .Domain }}</script>)" class="glyphicon glyphicon-question-sign" aria-hidden="true"></span>
 </label>
 <input id="domain" class="form-control" name="domain" placeholder="subdomain" type="text" readonly="readonly"/>
@@ -29,14 +49,6 @@
 </button>
 <br />
 <i>Note: Must be used with an <a target="_blank" href="https://github.com/mandatoryprogrammer/xsshunter_client">XSS Hunter compatible client tool, click here for an example.</a> If you want to build your own please see our <a href="https://github.com/mandatoryprogrammer/xsshunter_docs" target="_blank">documentation.</a></i> Note that injection requests are only stored for 30 days and are purged afterwards. You will still receive XSS alerts after 30 days but they won't be correlated.
-<br />
-<br />
-
-<label for="email_enabled">Email upon XSS payload fire?</label><br>
-<label class="email_enabled_toggle toggle">
-    <input id="email_enabled" type="checkbox" checked="">
-    <span class="handle"></span>
-</label>
 <br />
 <br />
 
