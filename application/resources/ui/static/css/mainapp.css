@@ -2,10 +2,6 @@
     display: none;
 }
 
-.reset-password-form {
-    display: none;
-}
-
 input, textarea {
     margin-top: 5px;
     margin-bottom: 10px;

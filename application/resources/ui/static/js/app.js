@@ -49,14 +49,6 @@ $("#update_account_button").on("click", function () {
     update_account_setings();
 });
 
-$("#reset_password_button").on("click", function () {
-    perform_password_reset();
-});
-
-$("#go_back_to_login_form_button").on("click", function () {
-    hide_password_reset();
-});
-
 function show_log_in_prompt() {
     $(".login-in-form").fadeIn();
     $("#username").select();
@@ -717,38 +709,6 @@ function show_app() {
 
 
 }
-
-function show_password_reset() {
-    $(".bad_password_dialogue").fadeOut();
-    $(".login-in-form").fadeOut();
-    $(".reset-password-form").fadeIn();
-}
-
-function hide_password_reset() {
-    $(".login-in-form").fadeIn();
-    $(".reset-password-form").fadeOut();
-}
-
-function perform_password_reset() {
-    $(".bad_password_dialogue").fadeOut();
-    show_loading_bar();
-
-    var username = $("#reset_password_username").val();
-
-    var post_data = {
-        "username": username,
-    };
-
-    api_request("POST", "/api/password_reset", post_data, function (data) {
-        hide_loading_bar();
-        if (data["success"] == true) {
-            //
-        } else {
-            $(".bad_password_dialogue").fadeIn();
-            $(".bad_password_dialogue").text(data["error"]);
-        }
-    })
-};
 
 function login() {
     $(".bad_password_dialogue").fadeOut();
