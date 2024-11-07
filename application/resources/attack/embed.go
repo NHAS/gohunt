@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/json"
+	"net/http"
 	"strings"
 
 	"github.com/NHAS/gohunt/application/models"
@@ -17,8 +18,21 @@ var (
 	pgpTemplate []byte
 )
 
-func NewProbe(domain, urlPath string, user models.User) []byte {
-	newProbe := bytes.ReplaceAll(embedProbe, []byte("[HOST_URL]"), []byte("http://"+domain))
+func NewProbe(numbProxies int, r *http.Request, user models.User) []byte {
+
+	scheme := "https://"
+	if numbProxies > 0 {
+		potentialScheme := r.Header.Get("X-Forwarded-Proto")
+		if potentialScheme != "" {
+			scheme = potentialScheme + "://"
+		}
+	} else {
+		if r.TLS == nil {
+			scheme = "http://"
+		}
+	}
+
+	newProbe := bytes.ReplaceAll(embedProbe, []byte("[HOST_URL]"), []byte(scheme+r.Host))
 
 	pgpKey, _ := json.Marshal(user.PGPKey)
 	newProbe = bytes.ReplaceAll(newProbe, []byte("[PGP_REPLACE_ME]"), []byte(pgpKey))
@@ -35,8 +49,8 @@ func NewProbe(domain, urlPath string, user models.User) []byte {
 	}
 	newProbe = bytes.ReplaceAll(newProbe, []byte("[TEMPLATE_REPLACE_ME]"), []byte(pgpTemplateReplace))
 
-	parts := strings.Split(urlPath, "/")
-	if urlPath != "/" && len(parts) > 1 {
+	parts := strings.Split(r.URL.Path, "/")
+	if r.URL.Path != "/" && len(parts) > 1 {
 		newProbe = bytes.ReplaceAll(newProbe, []byte("[PROBE_ID]"), []byte(parts[1]))
 	}
 

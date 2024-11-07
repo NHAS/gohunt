@@ -19,5 +19,5 @@ func (a *Application) probe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write(attack.NewProbe(r.Host, r.URL.Path, *user))
+	w.Write(attack.NewProbe(a.config.NumberProxies, r, *user))
 }

@@ -1,12 +1,12 @@
 domain: localhost:8081
 listen_address: 127.0.0.1:8081
-number_proxies: 1
+number_proxies: 0
 
 features:
   signup:
     enabled: true
   oidc: 
-    enabled: true
+    enabled: false
     public_url: http://localhost:8081/
     issuer_url: http://localhost:8080/realms/Test
     client_id: gohunt
