@@ -35,6 +35,19 @@ func (a *Application) app(w http.ResponseWriter, r *http.Request) {
 
 				return newUser.IsAdmin
 			},
+			"isSSOUser": func() bool {
+				_, s := a.store.GetSessionFromRequest(r)
+				if s == nil {
+					return false
+				}
+
+				var newUser models.User
+				if err := a.db.Where("uuid = ?", s.UUID).First(&newUser).Error; err != nil {
+					return false
+				}
+
+				return newUser.SSOSubject != ""
+			},
 		},
 		models.UIOptions(a.config), "mainapp_collected_pages.htm", "mainapp_payloads.htm", "mainapp_admin_users.htm", "mainapp_settings.htm", "mainapp_xss_fires.htm", "mainapp.htm"); err != nil {
 		log.Println("failed: ", err)

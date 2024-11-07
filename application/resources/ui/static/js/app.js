@@ -1,5 +1,7 @@
 injection_results = [];
 collected_page_data = [];
+users = [];
+
 expanded_report_id = "";
 expanded_collected_page_id = "";
 edit_user_id = "";
@@ -73,11 +75,21 @@ function get_user_data(success_callback, failed_callback) {
     });
 }
 
-// These two functions delete the item from the client side cache
+// These three functions delete the item from the client side cache
 function delete_injection(id) {
     for (var i = 0; i < injection_results.length; i++) {
         if (injection_results[i]["UUID"] == id) {
             injection_results.splice(i, 1);
+            return true;
+        }
+    }
+    return false;
+}
+
+function delete_user(id) {
+    for (var i = 0; i < users.length; i++) {
+        if (users[i]["UUID"] == id) {
+            users.splice(i, 1);
             return true;
         }
     }
@@ -314,6 +326,7 @@ function populate_users(offset, limit) {
     document.querySelector("#users_data_rows").innerHTML = "";
     api_request("GET", "/api/admin/users", { "offset": offset, "limit": limit }, function (response) {
         create_paginator_widget(5, offset, response["total"], ".users_paginator_div", populate_users);
+        users = response["results"];
         for (let i = 0; i < response["results"].length; i++) {
             append_user_row(response["results"][i]);
         }
@@ -365,8 +378,8 @@ function append_user_row(user_data) {
     $("#delete_user_button_" + user_data["UUID"]).on("click", function () {
         api_request("DELETE", "/api/admin/users", { "UUID": user_data["UUID"] }, function (response) {
             delete_user(user_data["UUID"]);
-            $("#delete_user_button_" + user_data["UUID"]).fadeOut();
-            $("#delete_user_button_" + user_data["UUID"]).remove();
+            $("#"+ user_data["UUID"]).fadeOut();
+            $("#" + user_data["UUID"]).remove();
             if (edit_user_id == user_data["UUID"]) {
                 $(".user_full_page_view").remove();
             }
