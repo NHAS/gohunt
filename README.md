@@ -22,11 +22,15 @@ example.com A <YOUR INSTANCE IP>
 *.example.com CNAME example.com
 ```
 
-Create an `.env` file
+Create an `.env` file, you can use the `.env.dev` as a template.
 ```sh
 DOMAIN=localhost:8081
 GOHUNT_USERNAME=test
+DB_PASSWORD=averystrongpassword
+#GOHUNT_PASSWORD=yourstrongpasswordhere (optional)
 ```
+
+Remember to set your `DOMAIN`!
 
 Start the `docker-compose.yaml`:
 ```sh
