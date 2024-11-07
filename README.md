@@ -1,5 +1,14 @@
 # GoHunt
 
+![image](https://github.com/user-attachments/assets/310053ad-0d92-42bc-ae72-fa439e567373)
+
+![image](https://github.com/user-attachments/assets/3dd8a917-b313-4c34-929d-4df67c648c31)
+
+![image](https://github.com/user-attachments/assets/d2a48ad0-cf17-48a6-a58b-055432efcb8c)
+
+![image](https://github.com/user-attachments/assets/14bd78dd-9938-43ef-919a-0c1b87e5241c)
+
+
 A revival of [XSSHunter](https://github.com/mandatoryprogrammer/xsshunter), `GoHunt` brings all your favorite `XSSHunter` functionality. Plus quality of life improvements!
 
 Main changes:
