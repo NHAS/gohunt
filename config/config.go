@@ -29,7 +29,7 @@ type Config struct {
 			PublicURL           string `yaml:"public_url"`
 			IssuerURL           string `yaml:"issuer_url"`
 			ClientID            string `yaml:"client_id"`
-			ClientSecret        string `yaml:"client_secret"`
+			ClientSecret        string `yaml:"client_secret" sensitive:"yes"`
 			AdminGroupClaimName string `yaml:"admin_group_claim_name"`
 			AdminGroup          string `yaml:"admin_group_name"`
 		}
@@ -42,7 +42,7 @@ type Config struct {
 			Host      string `yaml:"host"`
 			Port      int    `yaml:"port"`
 			Username  string `yaml:"username"`
-			Password  string `yaml:"password"`
+			Password  string `yaml:"password" sensitive:"yes"`
 			FromEmail string `yaml:"from"`
 		}
 
@@ -60,12 +60,17 @@ type Config struct {
 		User     string `yaml:"user"`
 		DBname   string `yaml:"dbname"`
 		SSLmode  string `yaml:"sslmode"`
-		Password string `yaml:"password"`
+		Password string `yaml:"password" sensitive:"yes"`
 	}
 }
 
-func listFields(v interface{}) []string {
-	var fields []string
+type fieldDescription struct {
+	Name      string
+	Sensitive bool
+}
+
+func listFields(v interface{}) []fieldDescription {
+	var fields []fieldDescription
 	t := reflect.TypeOf(v).Elem()
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
@@ -74,10 +79,11 @@ func listFields(v interface{}) []string {
 		if field.Type.Kind() == reflect.Struct {
 			subFields := listFields(reflect.New(field.Type).Interface())
 			for _, subField := range subFields {
-				fields = append(fields, fmt.Sprintf("%s.%s", fieldName, subField))
+				fields = append(fields, fieldDescription{Name: fmt.Sprintf("%s.%s", fieldName, subField.Name), Sensitive: subField.Sensitive})
 			}
 		} else {
-			fields = append(fields, fieldName)
+			value, _ := field.Tag.Lookup("sensitive")
+			fields = append(fields, fieldDescription{Name: fieldName, Sensitive: (value == "true" || value == "yes")})
 		}
 	}
 	return fields
@@ -129,12 +135,18 @@ func LoadConfig(path string) (c Config, err error) {
 		fields := listFields(&c)
 		setSomething := false
 		for _, field := range fields {
-			envVariable := os.Getenv(field)
-			fmt.Printf("%s=%s\n", field, envVariable)
+			envVariable := os.Getenv(field.Name)
+
+			printedValue := envVariable
+			if field.Sensitive && envVariable != "" {
+				printedValue = "**********"
+			}
+
+			fmt.Printf("%s=%s\n", field.Name, printedValue)
 
 			if envVariable != "" {
 				setSomething = true
-				setField(&c, field, envVariable)
+				setField(&c, field.Name, envVariable)
 			}
 		}
 

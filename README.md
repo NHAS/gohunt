@@ -162,3 +162,10 @@ features:
      dbname:   (string) Which database to use
      sslmode:  (string) postgres sslmode
 ```
+
+## Development
+
+```sh
+docker compose -f docker-compose.dev.yaml down --remove-orphans
+docker compose -f docker-compose.dev.yaml --env-file .env.dev up --build --force-recreate
+```

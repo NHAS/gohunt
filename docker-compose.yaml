@@ -3,9 +3,14 @@ services:
     image: postgres:13
     restart: on-failure
     environment:
-      - POSTGRES_USER=gohunt
+      - POSTGRES_USER=${GOHUNT_DB_USERNAME:-gohunt}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=gohunt
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${GOHUNT_DB_USERNAME:-gohunt}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     volumes:
       - db-data:/var/lib/postgresql/data
 
@@ -25,7 +30,7 @@ services:
       - Notification.Webhooks.Enabled=true
       - Database.Host=postgres
       - Database.Port=5432
-      - Database.User=gohunt
+      - Database.User=${GOHUNT_DB_USERNAME:-gohunt}
       - Database.DBname=gohunt
       - Database.SSLmode=disable
       - Database.Password=${DB_PASSWORD}

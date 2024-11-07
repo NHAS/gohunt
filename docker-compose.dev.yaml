@@ -2,14 +2,24 @@ services:
   postgres:
     image: postgres:13
     environment:
-      - POSTGRES_USER=gohunt
+      - POSTGRES_USER=${GOHUNT_DB_USERNAME:-gohunt}
       - POSTGRES_PASSWORD=gohunt
       - POSTGRES_DB=gohunt
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${GOHUNT_DB_USERNAME:-gohunt}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - db-data-dev:/var/lib/postgresql/data
 
   gohunt: 
-    image: ghcr.io/nhas/gohunt:main
+    depends_on: 
+      - postgres
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: on-failure
     environment:
       - GOHUNT_USERNAME=${GOHUNT_USERNAME}
       - GOHUNT_PASSWORD=${GOHUNT_PASSWORD}
@@ -20,7 +30,7 @@ services:
       - Notification.Webhooks.Enabled=true
       - Database.Host=postgres
       - Database.Port=5432
-      - Database.User=gohunt
+      - Database.User=${GOHUNT_DB_USERNAME:-gohunt}
       - Database.DBname=gohunt
       - Database.SSLmode=disable
       - Database.Password=gohunt
@@ -28,6 +38,4 @@ services:
       - 8081:8081
 
 volumes:
-  db-data:
-  caddy-data:
-  caddy_config:
+  db-data-dev:
