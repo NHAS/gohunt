@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=gohunt
+      - POSTGRES_PASSWORD=gohunt
+      - POSTGRES_DB=gohunt
+    ports:
+      - 127.0.0.1:5432:5432
+    volumes:
+      - gohunt-db-data:/var/lib/postgresql/data
+
+volumes:
+  gohunt-db-data:
