@@ -20,7 +20,7 @@ func UIOptions(c config.Config) UIoptions {
 		Domain:    c.Domain,
 		CanSignup: c.Features.Signup.Enabled,
 
-		TrustedWebhookDomains: strings.Join(c.Notification.Webhook.SafeDomains, ","),
+		TrustedWebhookDomains: strings.Join(c.Notification.Webhooks.SafeDomains, ","),
 		SSO:                   c.Features.Oidc.Enabled,
 	}
 }

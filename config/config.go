@@ -42,7 +42,7 @@ type Config struct {
 			FromEmail string `yaml:"from"`
 		}
 
-		Webhook struct {
+		Webhooks struct {
 			Enabled     bool     `yaml:"enabled"`
 			SafeDomains []string `yaml:"safe_domains"`
 		}
@@ -78,8 +78,8 @@ func LoadConfig(path string) (c Config, err error) {
 		return
 	}
 
-	if len(c.Notification.Webhook.SafeDomains) == 0 {
-		c.Notification.Webhook.SafeDomains = []string{"discord.com", "slack.com"}
+	if len(c.Notification.Webhooks.SafeDomains) == 0 {
+		c.Notification.Webhooks.SafeDomains = []string{"discord.com", "slack.com"}
 	}
 
 	return

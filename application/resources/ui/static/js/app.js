@@ -526,15 +526,31 @@ function create_paginator_widget(count, offset, total, target_div_selector, page
 }
 
 function update_account_setings() {
+
+    let collectionList = $("#page_collection_paths_list").val()
+    if(collectionList.length > 0) {
+        collectionList = collectionList.split(/\r?\n/)
+    } else {
+        collectionList = []
+    }
+
+    let webhooksList = $("#webhooks_list").val()
+    if(collectionList.length > 0) {
+        webhooksList = webhooksList.split(/\r?\n/)
+    } else {
+        webhooksList = []
+    }
+
+
     let userChange = {
         full_name: $("#full_name").val(),
         pgp_key: $("#pgp-key").val(),
         email: $("#email").val(),
-        page_collection_paths_list: $("#page_collection_paths_list").val().split(/\r?\n/),
+        page_collection_paths_list: collectionList,
         chainload_uri: $("#chainload_uri").val(),
         email_enabled: $('#email_enabled').is(':checked'),
         webhooks_enabled: $('#webhooks_enabled').is(':checked'),
-        webhooks_list: $("#webhooks_list").val().split(/\r?\n/),
+        webhooks_list: webhooksList,
         password: $("#settings_password").val(),
         current_password: $("#settings_current_password").val()
     }
@@ -542,11 +558,11 @@ function update_account_setings() {
     USER.full_name = $("#full_name").val();
     USER.pgp_key = $("#pgp-key").val();
     USER.email = $("#email").val(),
-    USER.page_collection_paths_list = $("#page_collection_paths_list").val().split(/\r?\n/);
+    USER.page_collection_paths_list = collectionList;
     USER.chainload_uri = $("#chainload_uri").val();
     USER.email_enabled = $('#email_enabled').is(':checked');
     USER.webhooks_enabled = $('#webhooks_enabled').is(':checked');
-    USER.webhooks_list = $("#webhooks_list").val().split(/\r?\n/);
+    USER.webhooks_list = webhooksList;
     api_request("PUT", "/api/user", userChange, function (response) {
         if (response["success"] == false) {
             $(".invalid_fields").text(response["message"])

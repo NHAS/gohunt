@@ -730,23 +730,35 @@ func (a *Application) editUserInformationHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	for _, webhookUrl := range editReq.WebhooksList {
+	for i := range editReq.WebhooksList {
+
+		webhookUrl := strings.TrimSpace(editReq.WebhooksList[i])
 		u, err := url.Parse(webhookUrl)
 		if err != nil {
 			models.Message(w, false, fmt.Sprintf("Could not partse URL: %q", webhookUrl))
 			return
 		}
 
-		if !slices.Contains(a.config.Notification.Webhook.SafeDomains, u.Host) {
-			models.Message(w, false, fmt.Sprintf("Webhook %q is not one of the safe domains %v", webhookUrl, a.config.Notification.Webhook.SafeDomains))
+		if !slices.Contains(a.config.Notification.Webhooks.SafeDomains, u.Host) {
+			models.Message(w, false, fmt.Sprintf("Webhook %q is not one of the safe domains %v", webhookUrl, a.config.Notification.Webhooks.SafeDomains))
 			return
+		}
+
+		editReq.WebhooksList[i] = webhookUrl
+	}
+
+	cleanPaths := []string{}
+	for i := range editReq.PageCollectionPaths {
+		collectionPath := strings.TrimSpace(editReq.WebhooksList[i])
+		if collectionPath != "" {
+			cleanPaths = append(cleanPaths, collectionPath)
 		}
 	}
 
 	user.EmailEnabled = editReq.EmailEnabled
-	user.ChainloadURI = editReq.ChainloadURI
-	user.PageCollectionPaths = editReq.PageCollectionPaths
-	user.PGPKey = editReq.PGPKey
+	user.ChainloadURI = strings.TrimSpace(editReq.ChainloadURI)
+	user.PageCollectionPaths = cleanPaths
+	user.PGPKey = strings.TrimSpace(editReq.PGPKey)
 
 	user.WebhooksList = editReq.WebhooksList
 
@@ -807,8 +819,7 @@ func (a *Application) sendJSInjectionNotification(user models.User, injection mo
 	go a.sendMail(user, title, "text/html", content)
 
 	// Got lazy
-	b, _ := json.MarshalIndent(injection, "", "   ")
-	go a.sendWebhook(user, title, string(b))
+	go a.sendWebhook(user, title, injection.BriefString())
 }
 
 func (a *Application) sendMail(user models.User, to, subject, contentType string, content ...string) {
@@ -838,13 +849,11 @@ func (a *Application) sendMail(user models.User, to, subject, contentType string
 }
 
 func (a *Application) sendWebhook(user models.User, title string, content ...string) {
-	if a.config.Notification.Webhook.Enabled && user.WebhooksEnabled {
+	if a.config.Notification.Webhooks.Enabled && user.WebhooksEnabled {
 		wrapper := struct {
-			Full string
 			Text string `json:"text"`
 		}{
-			Full: strings.Join(content, "\n"),
-			Text: title,
+			Text: title + "\n" + strings.Join(content, "\n"),
 		}
 		webhookMessage, _ := json.Marshal(wrapper)
 
@@ -856,10 +865,23 @@ func (a *Application) sendWebhook(user models.User, title string, content ...str
 				}
 
 				buff := bytes.NewBuffer(webhookMessage)
-				_, err := client.Post(webhook, "application/json", buff)
+				res, err := client.Post(webhook, "application/json", buff)
 				if err != nil {
 					log.Printf("Error sending webhook '%s': %s", webhook, err)
+					continue
 				}
+				defer res.Body.Close()
+
+				if res.StatusCode != 200 {
+					all, err := io.ReadAll(res.Body)
+					if err != nil {
+						log.Println("failed to read error text of webhook after non-200 response code: ", res.Status, err)
+						continue
+					}
+
+					log.Printf("Webhook %q failed with status %q, err: %q", webhook, res.Status, string(all))
+				}
+
 			}
 		}()
 	}

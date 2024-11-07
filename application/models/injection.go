@@ -1,6 +1,8 @@
 package models
 
 import (
+	"fmt"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -36,6 +38,15 @@ type Injection struct {
 	BrowserTime        int64     `json:"browser-time"`
 	OwnerID            uuid.UUID `json:"-"`
 	CorrelatedRequest  string    `json:"injection_key"`
+}
+
+func (i *Injection) BriefString() string {
+	return fmt.Sprintf(
+		"Victim IP: %q\nReferer: %q\nUser-Agent: %q",
+		i.VictimIP,
+		i.Referer,
+		i.UserAgent,
+	)
 }
 
 type InjectionRequest struct {

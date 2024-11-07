@@ -18,7 +18,7 @@ var (
 )
 
 func NewProbe(domain, urlPath string, user models.User) []byte {
-	newProbe := bytes.ReplaceAll(embedProbe, []byte("[HOST_URL]"), []byte("https://"+domain))
+	newProbe := bytes.ReplaceAll(embedProbe, []byte("[HOST_URL]"), []byte("http://"+domain))
 
 	pgpKey, _ := json.Marshal(user.PGPKey)
 	newProbe = bytes.ReplaceAll(newProbe, []byte("[PGP_REPLACE_ME]"), []byte(pgpKey))

@@ -1,4 +1,4 @@
-domain: localhost
+domain: localhost:8081
 listen_address: 127.0.0.1:8081
 number_proxies: 1
 
@@ -23,6 +23,8 @@ notification:
     port: 587
     username: 
     password: 
+  webhooks:
+    enabled: true
 
 database:
   password: gohunt
