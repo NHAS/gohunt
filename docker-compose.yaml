@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:13
+    restart: on-failure
     environment:
       - POSTGRES_USER=gohunt
       - POSTGRES_PASSWORD=${DB_PASSWORD}
@@ -9,6 +10,8 @@ services:
       - db-data:/var/lib/postgresql/data
 
   gohunt: 
+    depends_on: postgres
+    restart: on-failure
     image: ghcr.io/nhas/gohunt:main
     environment:
       - GOHUNT_USERNAME=${GOHUNT_USERNAME}
@@ -27,6 +30,8 @@ services:
       - Database.Password=${DB_PASSWORD}
 
   caddy:
+    depends_on: gohunt
+    restart: on-failure
     image: caddy:2
     ports:
       - 80:80
