@@ -221,6 +221,17 @@ function finishing_moves() {
 if( document.readyState == "complete" ) {
     hook_load_if_not_ready();
 } else {
+    if( document instanceof SVGDocument ) {
+        // Document will never be "ready"
+        try {
+            probe_return_data['dom'] = never_null( document.documentElement.outerHTML );
+        } catch ( e ) {
+            probe_return_data['dom'] = 'SVGDocument';
+        }
+
+        finishing_moves()
+    }
+
     addEvent( window, "load", function(){
         hook_load_if_not_ready();
     });
