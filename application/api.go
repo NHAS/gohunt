@@ -749,7 +749,7 @@ func (a *Application) editUserInformationHandler(w http.ResponseWriter, r *http.
 
 	cleanPaths := []string{}
 	for i := range editReq.PageCollectionPaths {
-		collectionPath := strings.TrimSpace(editReq.WebhooksList[i])
+		collectionPath := strings.TrimSpace(editReq.PageCollectionPaths[i])
 		if collectionPath != "" {
 			cleanPaths = append(cleanPaths, collectionPath)
 		}

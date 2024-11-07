@@ -535,7 +535,7 @@ function update_account_setings() {
     }
 
     let webhooksList = $("#webhooks_list").val()
-    if(collectionList.length > 0) {
+    if(webhooksList.length > 0) {
         webhooksList = webhooksList.split(/\r?\n/)
     } else {
         webhooksList = []
