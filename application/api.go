@@ -90,6 +90,11 @@ func (a *Application) allowedDomain(w http.ResponseWriter, r *http.Request) {
 
 	search := strings.TrimSuffix(domain, "."+a.config.Domain)
 
+	if search == "api" {
+		w.Write([]byte("OK!"))
+		return
+	}
+
 	var user models.User
 	if err := a.db.Where("domain = ?", search).First(&user).Error; err != nil {
 
@@ -105,6 +110,10 @@ func (a *Application) allowedDomain(w http.ResponseWriter, r *http.Request) {
 func (a *Application) getUserFromSubdomain(r *http.Request) (*models.User, error) {
 
 	domain := strings.TrimSuffix(r.Host, "."+a.config.Domain)
+
+	if domain == "api" {
+		return nil, errors.New("api domain is not owned by any user")
+	}
 
 	var user models.User
 	if err := a.db.Where("domain = ?", domain).First(&user).Error; err != nil {
@@ -132,6 +141,11 @@ func (a *Application) registerHandler(w http.ResponseWriter, r *http.Request) {
 
 	if !domainRegex.MatchString(userData.Domain) {
 		models.Message(w, false, "Invalid domain, only alphanumb and -, .")
+		return
+	}
+
+	if userData.Domain == "api" {
+		models.Message(w, false, "Invalid domain api is restricted")
 		return
 	}
 
@@ -918,59 +932,48 @@ injection_key - This is the injection key which the XSS payload uses to identify
 
 Sending two correlation requests means that the previous injection_key entry will be replaced.
 */
-// func (a *Application) injectionRequestHandler(w http.ResponseWriter, r *http.Request) {
-// 	defer r.Body.Close()
-// 	var injectionRequest models.InjectionRequest
+func (a *Application) injectionRequestHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 
-// 	err := jsonDecoder(r.Body).Decode(&injectionRequest)
-// 	if err != nil {
-// 		http.NotFound(w, r)
-// 		return
-// 	}
+	var injectionRequest models.InjectionRequest
+	err := jsonDecoder(r.Body).Decode(&injectionRequest)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
 
-// 	newInjectionRequest := models.InjectionRequest{
-// 		InjectionKey: injectionRequest.InjectionKey,
-// 		Request:      injectionRequest.Request,
+	newInjectionRequest := models.InjectionRequest{
+		InjectionKey: injectionRequest.InjectionKey,
+		Request:      injectionRequest.Request,
 
-// 		OwnerCorrelationKey: injectionRequest.OwnerCorrelationKey,
-// 	}
+		OwnerCorrelationKey: injectionRequest.OwnerCorrelationKey,
+	}
 
-// 	var ownerUser models.User
-// 	if err := a.db.Where("owner_correlation_key = ?", newInjectionRequest.OwnerCorrelationKey).First(&ownerUser).Error; err != nil {
-// 		log.Println("owner_correlation_key not found: ", err)
-// 		a.writeJson(w, models.InjectionAPIResponse{
-// 			Success: false,
-// 			Message: "Invalid owner correlation key provided!",
-// 		})
-// 		return
-// 	}
+	var ownerUser models.User
+	if err := a.db.Where("owner_correlation_key = ?", newInjectionRequest.OwnerCorrelationKey).First(&ownerUser).Error; err != nil {
+		log.Println("owner_correlation_key not found: ", err)
 
-// 	log.Printf("User %q just sent us an injection attempt with an ID of %q", ownerUser.Username, injectionRequest.InjectionKey)
+		models.Message(w, false, "Invalid owner correlation key provided!")
+		return
+	}
 
-// 	if err := a.db.Delete(models.InjectionRequest{}, "injection_key = ? AND owner_correlation_key = ?", injectionRequest.InjectionKey, ownerUser.OwnerCorrelationKey); err != nil {
-// 		log.Println("failed to delete old entries: ", err)
-// 		a.writeJson(w, models.InjectionAPIResponse{
-// 			Success: false,
-// 			Message: "Failed to delete previous entries",
-// 		})
-// 		return
-// 	}
+	log.Printf("User %q just sent us an injection attempt with an ID of %q", ownerUser.Username, injectionRequest.InjectionKey)
 
-// 	if err := a.db.Create(&newInjectionRequest).Error; err != nil {
-// 		log.Println("failed to create new entries: ", err)
-// 		a.writeJson(w, models.InjectionAPIResponse{
-// 			Success: false,
-// 			Message: "Failed to create new entries",
-// 		})
+	if err := a.db.Delete(models.InjectionRequest{}, "injection_key = ? AND owner_correlation_key = ?", injectionRequest.InjectionKey, ownerUser.OwnerCorrelationKey); err != nil {
+		log.Println("failed to delete old entries: ", err)
+		models.Message(w, false, "Failed to delete previous entries")
 
-// 		return
-// 	}
+		return
+	}
 
-// 	a.writeJson(w, models.InjectionAPIResponse{
-// 		Success: true,
-// 		Message: "Injection request successfully recorded!",
-// 	})
-// }
+	if err := a.db.Create(&newInjectionRequest).Error; err != nil {
+		log.Println("failed to create new entries: ", err)
+		models.Message(w, false, "Failed to create new entries")
+		return
+	}
+
+	models.Message(w, true, "Injection request successfully recorded!")
+}
 
 func (a *Application) healthHandler(w http.ResponseWriter, r *http.Request) {
 

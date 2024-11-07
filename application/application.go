@@ -117,7 +117,12 @@ func (a *Application) Run() error {
 
 	r := mux.NewRouter()
 
+	// Can be used by caddy to determine if a certificate should be issued (see tls_ondemand ask/permission)
 	r.HandleFunc("/check_domain", a.allowedDomain)
+
+	// Backwards compatiablity with xss hunter tools
+	injectionRequest := r.Host("api." + a.config.Domain).Subrouter()
+	injectionRequest.PathPrefix("/api/record_injection").HandlerFunc(a.injectionRequestHandler).Methods("POST")
 
 	collectionDomains := r.Host("{subdomain:.*}." + a.config.Domain).Subrouter()
 
@@ -142,6 +147,8 @@ func (a *Application) Run() error {
 		managementDomain.HandleFunc("/api/login/oidc", a.oidcLoginRedirect).Methods("GET")
 		managementDomain.HandleFunc("/api/login/oidc/authorise", a.oidcLoginHandler).Methods("GET")
 	}
+
+	managementDomain.PathPrefix("/api/record_injection").HandlerFunc(a.injectionRequestHandler).Methods("POST")
 
 	// Optional features
 	if a.config.Features.Signup.Enabled {
