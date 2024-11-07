@@ -21,13 +21,13 @@
 <br />
 <br />
 
-<label for="webhooks_list">Webhooks <code>(trusted domains {{ .TrustedWebhookDomains }})</code> <span title="Webhooks" data-toggle="popover" data-placement="top" data-content="This is a list of URLs to send slack compatiable webhook messages." class="glyphicon glyphicon-question-sign" aria-hidden="true"></span></label><br>
+<label for="webhooks_list">Webhooks (trusted domains <code>{{ .TrustedWebhookDomains }}</code>) <span title="Webhooks" data-toggle="popover" data-placement="top" data-content="This is a list of URLs to send slack compatiable webhook messages." class="glyphicon glyphicon-question-sign" aria-hidden="true"></span></label><br>
 <textarea id="webhooks_list" name="webhooks_list" class="form-control" rows="3" placeholder="https://discord.com/...&#13;&#10;https://slack.com/...&#13;&#10;..."></textarea>
 <br />
 
-<label for="webhook_enabled">Send webhook upon XSS payload fire?</label><br>
+<label for="webhooks_enabled">Send webhook upon XSS payload fire?</label><br>
 <label class="email_enabled_toggle toggle">
-    <input id="webhook_enabled" type="checkbox" checked="">
+    <input id="webhooks_enabled" type="checkbox" checked="">
     <span class="handle"></span>
 </label>
 <br />

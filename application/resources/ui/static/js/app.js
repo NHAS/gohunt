@@ -533,7 +533,7 @@ function update_account_setings() {
         page_collection_paths_list: $("#page_collection_paths_list").val().split(/\r?\n/),
         chainload_uri: $("#chainload_uri").val(),
         email_enabled: $('#email_enabled').is(':checked'),
-        webhook_enabled: $('#webhook_enabled').is(':checked'),
+        webhooks_enabled: $('#webhooks_enabled').is(':checked'),
         webhooks_list: $("#webhooks_list").val().split(/\r?\n/),
         password: $("#settings_password").val(),
         current_password: $("#settings_current_password").val()
@@ -545,9 +545,8 @@ function update_account_setings() {
     USER.page_collection_paths_list = $("#page_collection_paths_list").val().split(/\r?\n/);
     USER.chainload_uri = $("#chainload_uri").val();
     USER.email_enabled = $('#email_enabled').is(':checked');
-    USER.webhook_enabled = $('#webhook_enabled').is(':checked');
+    USER.webhooks_enabled = $('#webhooks_enabled').is(':checked');
     USER.webhooks_list = $("#webhooks_list").val().split(/\r?\n/);
-
     api_request("PUT", "/api/user", userChange, function (response) {
         if (response["success"] == false) {
             $(".invalid_fields").text(response["message"])
@@ -579,7 +578,7 @@ function populate_settings_page() {
     $("#chainload_uri").val(USER.chainload_uri);
     $("#email_enabled").prop('checked', USER.email_enabled);
 
-    $("#webhook_enabled").prop('checked', USER.webhook_enabled);
+    $("#webhooks_enabled").prop('checked', USER.webhooks_enabled);
     if (USER.webhooks_list !== null) {
         $("#webhooks_list").val(USER.webhooks_list.join("\n"));
     }
