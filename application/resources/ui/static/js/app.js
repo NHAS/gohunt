@@ -366,11 +366,11 @@ function append_collected_page_row(collected_page_data) {
 
 
 function append_user_row(user_data) {
-    let user_row = $.parseHTML('<tr class="user_row_template">  <td class="full_name_column"></td>  <td class="email_column"><a class="user_email"></a></td>  <td class="attributes_column"></td>  <td class="user_options_column">    <button type="button" class="edit_user_button btn btn-info btn-block"><span class="glyphicon glyphicon-edit"></span> Edit User</button>    <button type="button" id="clear_data_button_' + user_data["UUID"] + '" class="btn btn-warning btn-block"><span class="glyphicon glyphicon-repeat"></span> Clear Data</button>    <button type="button" id="delete_user_button_' + user_data["UUID"] + '" class="btn btn-danger btn-block"><span class="glyphicon glyphicon-trash"></span> Delete</button>  </td></tr>')[0];
+    let user_row = $.parseHTML('<tr class="user_row_template">  <td class="full_name_column"><span class="full_name"></span></td>  <td class="email_column"><a class="user_email"></a></td>  <td class="attributes_column"><span class="attributes"></span></td>  <td class="user_options_column">    <button type="button" class="edit_user_button btn btn-info btn-block"><span class="glyphicon glyphicon-edit"></span> Edit User</button>    <button type="button" id="clear_data_button_' + user_data["UUID"] + '" class="btn btn-warning btn-block"><span class="glyphicon glyphicon-repeat"></span> Clear Data</button>    <button type="button" id="delete_user_button_' + user_data["UUID"] + '" class="btn btn-danger btn-block"><span class="glyphicon glyphicon-trash"></span> Delete</button>  </td></tr>')[0];
     user_row.id = user_data["UUID"];
-    user_row.querySelector(".full_name_column").src = user_data["full_name"];
-    user_row.querySelector(".user_email").text = user_data["email"];
-    user_row.querySelector(".attributes_column").text = user_data["attributes"];
+    user_row.querySelector(".full_name").innerText = user_data["full_name"];
+    user_row.querySelector(".user_email").innerText = user_data["email"];
+    user_row.querySelector(".attributes").innerText = user_data["attributes"].join(", ");
 
     document.querySelector("#users_data_rows").appendChild(user_row);
 
