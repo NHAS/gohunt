@@ -13,7 +13,7 @@ features:
     public_url: http://localhost:8081/
     issuer_url: http://localhost:8080/realms/Test
     client_id: gohunt
-    client_secret: <secret>
+    client_secret: 
     admin_group_claim_name: groups 
     admin_group_name: gohunt_adm
 

@@ -46,9 +46,9 @@ type UserDTO struct {
 	ChainloadURI        string   `json:"chainload_uri"`
 	OwnerCorrelationKey string   `gorm:"unique" json:"owner_correlation_key"`
 	PageCollectionPaths []string `gorm:"serializer:json" json:"page_collection_paths_list"`
-	IsAdmin             bool
+	IsAdmin             bool     `json:"is_admin"`
 
-	SSOSubject string `gorm:"unqiue"`
+	SSOSubject string `gorm:"unqiue" json:"sso_subject"`
 }
 
 func (u *UserDTO) BeforeCreate(tx *gorm.DB) (err error) {
@@ -89,3 +89,16 @@ type LoginUserRequest struct {
 const (
 	UserIDSession = "user_id"
 )
+
+type AdminUserDTO struct {
+	Base
+	FullName   string   `json:"full_name"`
+	Email      string   `json:"email"`
+	Attributes []string `json:"attributes"`
+}
+
+type GetUsersResponse struct {
+	Results []AdminUserDTO `json:"results"`
+	Success bool           `json:"success"`
+	Total   int64          `json:"total"`
+}

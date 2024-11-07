@@ -2,6 +2,7 @@ injection_results = [];
 collected_page_data = [];
 expanded_report_id = "";
 expanded_collected_page_id = "";
+edit_user_id = "";
 
 BASE_DOMAIN = (location.host.toString())
 
@@ -309,6 +310,27 @@ function populate_collected_pages(offset, limit) {
     });
 }
 
+function populate_users(offset, limit) {
+    document.querySelector("#users_data_rows").innerHTML = "";
+    api_request("GET", "/api/admin/users", { "offset": offset, "limit": limit }, function (response) {
+        create_paginator_widget(5, offset, response["total"], ".users_paginator_div", populate_users);
+        for (let i = 0; i < response["results"].length; i++) {
+            append_user_row(response["results"][i]);
+        }
+
+        $(".edit_user_button").on("click", function () {
+            let parent_id = this.parentElement.parentElement.id;
+            if (parent_id == edit_user_id) {
+                $(".user_full_page_view").remove();
+                edit_user_id = "";
+            } else {
+                display_full_user(parent_id);
+            }
+        });
+
+    });
+}
+
 function append_collected_page_row(collected_page_data) {
     var example_row = $.parseHTML('<tr class="xss_fire_row_template"><td class="collected_pages_uri_td"><span class="collected_pages_uri_text"><a href="" class="collected_page_link"></a></span></td><td class="collected_pages_options_button_td"><button type="button" class="view_full_page_source_button btn btn-info btn-block"><span class="glyphicon glyphicon-eye-open"></span> View Page Details</button><button type="button" id="delete_collected_page_button_' + collected_page_data["UUID"] + '" class="delete_collected_page_button btn btn-danger btn-block"><span class="glyphicon glyphicon-trash"></span> Delete</button></td></tr>')[0];
     example_row.id = collected_page_data["UUID"];
@@ -326,6 +348,33 @@ function append_collected_page_row(collected_page_data) {
                 $(".collected_page_full_page_view").remove();
             }
         });
+    });
+}
+
+
+function append_user_row(user_data) {
+    let user_row = $.parseHTML('<tr class="user_row_template">  <td class="full_name_column"></td>  <td class="email_column"><a class="user_email"></a></td>  <td class="attributes_column"></td>  <td class="user_options_column">    <button type="button" class="edit_user_button btn btn-info btn-block"><span class="glyphicon glyphicon-edit"></span> Edit User</button>    <button type="button" id="clear_data_button_' + user_data["UUID"] + '" class="btn btn-warning btn-block"><span class="glyphicon glyphicon-repeat"></span> Clear Data</button>    <button type="button" id="delete_user_button_' + user_data["UUID"] + '" class="btn btn-danger btn-block"><span class="glyphicon glyphicon-trash"></span> Delete</button>  </td></tr>')[0];
+    user_row.id = user_data["UUID"];
+    user_row.querySelector(".full_name_column").src = user_data["full_name"];
+    user_row.querySelector(".user_email").text = user_data["email"];
+    user_row.querySelector(".attributes_column").text = user_data["attributes"];
+
+    document.querySelector("#users_data_rows").appendChild(user_row);
+
+    
+    $("#delete_user_button_" + user_data["UUID"]).on("click", function () {
+        api_request("DELETE", "/api/admin/users", { "UUID": user_data["UUID"] }, function (response) {
+            delete_user(user_data["UUID"]);
+            $("#" + user_data["UUID"]).fadeOut();
+            $("#" + user_data["UUID"]).remove();
+            if (edit_user_id == user_data["UUID"]) {
+                $(".user_full_page_view").remove();
+            }
+        });
+    });
+
+    $("#clear_data_button_" + user_data["UUID"]).on("click", function (e) {
+        api_request("DELETE", "/api/admin/users/data", { "UUID": user_data["UUID"] }, function (response) {});
     });
 }
 
@@ -555,6 +604,7 @@ function show_app() {
         });
     });
 
+   
     populate_xss_fires(0, 5);
     populate_collected_pages(0, 5);
     get_user_data(function () {
@@ -562,6 +612,10 @@ function show_app() {
             $(".xsshunter_application").fadeIn();
         });
     });
+
+    if(USER != null && USER.is_admin) {
+        populate_users(0,5)
+    }
 }
 
 function show_password_reset() {

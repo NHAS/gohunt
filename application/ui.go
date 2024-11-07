@@ -32,6 +32,7 @@ func (a *Application) app(w http.ResponseWriter, r *http.Request) {
 				if err := a.db.Where("uuid = ?", s.UUID).First(&newUser).Error; err != nil {
 					return false
 				}
+
 				return newUser.IsAdmin
 			},
 		},

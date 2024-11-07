@@ -55,6 +55,25 @@ func (a *Application) securityHeadersMiddleware(next http.Handler) http.Handler 
 	})
 }
 
+func (a *Application) isAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		user := a.getAuthenticatedUser(r)
+		if user == nil {
+			// Shouldnt be able to happen
+			http.NotFound(w, r)
+			return
+		}
+
+		if !user.IsAdmin {
+			http.NotFound(w, r)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (a *Application) allowedDomain(w http.ResponseWriter, r *http.Request) {
 
 	domain := r.URL.Query().Get("domain")
@@ -290,7 +309,7 @@ func (a *Application) oidcLoginHandler(w http.ResponseWriter, r *http.Request) {
 	marshalUserinfo := func(w http.ResponseWriter, r *http.Request, tokens *oidc.Tokens[*oidc.IDTokenClaims], state string, rp rp.RelyingParty, info *oidc.UserInfo) {
 
 		isAdmin := false
-		if a.config.Features.Oidc.AdminGroupClaimName != "" && a.config.Features.Oidc.AdminGroup != "" {
+		if a.config.Features.Oidc.AdminGroupClaimName != "" && a.config.Features.Oidc.AdminGroup != "" && tokens.IDTokenClaims.Claims[a.config.Features.Oidc.AdminGroupClaimName] != nil {
 
 			groupsIntf, ok := tokens.IDTokenClaims.Claims[a.config.Features.Oidc.AdminGroupClaimName].([]interface{})
 			if !ok {
@@ -385,7 +404,7 @@ func (a *Application) oidcLoginHandler(w http.ResponseWriter, r *http.Request) {
 			// Make sure we unset the domain, so that if a user has a custom domain we dont stomp it
 			existingUser.Domain = ""
 
-			if err := a.db.Omit("domain").Updates(&existingUser).Error; err != nil {
+			if err := a.db.Select("is_admin", "email", "username").Updates(&existingUser).Error; err != nil {
 				log.Println("Failed to update SSO user details in database: ", err)
 				http.Error(w, "Server Error", http.StatusInternalServerError)
 				return
@@ -1064,4 +1083,145 @@ func (a *Application) callbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.writeJson(w, struct{}{})
+}
+
+func (a *Application) adminGetAllUsers(w http.ResponseWriter, r *http.Request) {
+	user := a.getAuthenticatedUser(r)
+	if user == nil || !user.IsAdmin {
+		http.NotFound(w, r)
+		return
+	}
+
+	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
+	if err != nil {
+		offset = 0
+	}
+
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil {
+		limit = 25
+	}
+
+	limit = max(limit, 300)
+
+	var users []models.User
+	if err := a.db.Order("id desc").Limit(limit).Offset(offset).Find(&users).Error; err != nil {
+		log.Println("failed", err)
+		models.Message(w, false, "Failed")
+		return
+	}
+
+	var count int64
+	if err := a.db.Model(&models.User{}).Count(&count).Error; err != nil {
+		log.Println("failed to count", err)
+		models.Message(w, false, "Failed")
+		return
+	}
+
+	var response models.GetUsersResponse
+	response.Results = []models.AdminUserDTO{}
+
+	for i := range users {
+
+		var userDto models.AdminUserDTO
+		userDto.UUID = users[i].UUID
+		userDto.FullName = users[i].FullName
+		userDto.Email = users[i].Email
+
+		userDto.Attributes = []string{}
+
+		if users[i].IsAdmin {
+			userDto.Attributes = append(userDto.Attributes, "Admin")
+		}
+
+		if users[i].SSOSubject != "" {
+			userDto.Attributes = append(userDto.Attributes, "SSO User")
+		}
+
+		response.Results = append(response.Results, userDto)
+	}
+
+	response.Total = count
+	response.Success = true
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(&response)
+
+}
+
+func (a *Application) adminDeleteUser(w http.ResponseWriter, r *http.Request) {
+	user := a.getAuthenticatedUser(r)
+	if user == nil || !user.IsAdmin {
+		http.NotFound(w, r)
+		return
+	}
+
+	var toDelete models.Base
+	err := jsonDecoder(r.Body).Decode(&toDelete)
+	if err != nil {
+		models.Message(w, false, "Bad Request")
+		return
+	}
+
+	var deletedUser models.User
+	if err := a.db.Unscoped().Clauses(clause.Returning{}).Where("uuid = ?", toDelete.UUID).Delete(&deletedUser).Error; err != nil {
+		log.Println("failed", err)
+
+		models.Message(w, false, "Not found")
+		return
+	}
+
+	log.Printf("Admin deleted User %q (%s)", deletedUser.Username, deletedUser.UUID)
+
+	models.Message(w, true, "User deleted!")
+
+}
+
+func (a *Application) adminDeleteUserData(w http.ResponseWriter, r *http.Request) {
+	user := a.getAuthenticatedUser(r)
+	if user == nil || !user.IsAdmin {
+		http.NotFound(w, r)
+		return
+	}
+
+	var userDataToDelete models.Base
+	err := jsonDecoder(r.Body).Decode(&userDataToDelete)
+	if err != nil {
+		models.Message(w, false, "Bad Request")
+		return
+	}
+
+	var targetUser models.User
+	if err := a.db.Where("uuid = ?", userDataToDelete.UUID).First(&targetUser).Error; err != nil {
+		log.Println("failed", err)
+
+		models.Message(w, false, "Not found")
+		return
+	}
+
+	if err := a.db.Unscoped().Where("owner_id = ?", userDataToDelete.UUID).Delete(&models.Injection{}).Error; err != nil {
+		log.Println("failed", err)
+
+		models.Message(w, false, "Not found")
+		return
+	}
+
+	if err := a.db.Unscoped().Where("owner_id = ?", userDataToDelete.UUID).Delete(&models.CollectedPage{}).Error; err != nil {
+		log.Println("failed", err)
+
+		models.Message(w, false, "Not found")
+		return
+	}
+
+	if err := a.db.Unscoped().Where("owner_correlation_key = ?", targetUser.OwnerCorrelationKey).Delete(&models.InjectionRequest{}).Error; err != nil {
+		log.Println("failed", err)
+
+		models.Message(w, false, "Not found")
+		return
+	}
+
+	log.Printf("Admin deleted User %q (%s) data", targetUser.Username, targetUser.UUID)
+
+	models.Message(w, true, "User data deleted!")
+
 }

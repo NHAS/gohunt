@@ -168,21 +168,32 @@ func (a *Application) Run() error {
 	authorizedPages.HandleFunc("GET /payloadfires", a.getXSSPayloadFiresHandler)
 	authorizedPages.HandleFunc("POST /resend_injection_email", a.resendInjectionEmailHandler)
 	authorizedPages.HandleFunc("GET /logout", a.logoutHandler)
+	// Admin pages
 
-	managementDomain.PathPrefix("/api/").Handler(http.StripPrefix("/api", a.store.AuthorisationChecks(authorizedPages,
-		func(w http.ResponseWriter, r *http.Request) {
-			http.Redirect(w, r, "/app", http.StatusSeeOther)
-		},
-		func(w http.ResponseWriter, r *http.Request, sess SessionEntry) bool {
-			if a.getAuthenticatedUser(r) == nil {
-				a.store.DeleteSession(w, r)
+	adminPages := http.NewServeMux()
+	adminPages.HandleFunc("GET /users", a.adminGetAllUsers)
+	adminPages.HandleFunc("DELETE /users", a.adminDeleteUser)
+	adminPages.HandleFunc("DELETE /users/data", a.adminDeleteUserData)
+
+	authorizedPages.Handle("/admin/", http.StripPrefix("/admin", a.isAdmin(adminPages)))
+
+	managementDomain.PathPrefix("/api/").Handler(http.StripPrefix("/api",
+		a.store.AuthorisationChecks(authorizedPages,
+			func(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, "/app", http.StatusSeeOther)
-				return false
-			}
+			},
+			func(w http.ResponseWriter, r *http.Request, sess SessionEntry) bool {
+				user := a.getAuthenticatedUser(r)
 
-			return true
+				if user == nil {
+					a.store.DeleteSession(w, r)
+					http.Redirect(w, r, "/app", http.StatusSeeOther)
+					return false
+				}
 
-		})))
+				return true
+
+			})))
 
 	// Callback routes
 	//r.HandleFunc("POST /api/record_injection", a.injectionRequestHandler)
