@@ -114,7 +114,7 @@ func setField(v interface{}, fieldPath string, value string) {
 				log.Printf("Field not found: %s", fieldPath)
 			}
 		} else {
-			r = r.FieldByName(part).Elem()
+			r = r.FieldByName(part)
 		}
 	}
 }

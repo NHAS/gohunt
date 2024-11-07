@@ -3,7 +3,7 @@ services:
     image: postgres:13
     environment:
       - POSTGRES_USER=gohunt
-      - POSTGRES_PASSWORD=gohunt
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=gohunt
     volumes:
       - db-data:/var/lib/postgresql/data
@@ -24,7 +24,7 @@ services:
       - Database.User=gohunt
       - Database.DBname=gohunt
       - Database.SSLmode=disabled
-      - Database.Password=gohunt
+      - Database.Password=${DB_PASSWORD}
 
   caddy:
     image: caddy:2
@@ -36,7 +36,7 @@ services:
     volumes:
       - caddy-data:/data
       - caddy_config:/config
-      - ./Caddyfile.example:/etc/caddy/Caddyfile
+      - ./Caddyfile:/etc/caddy/Caddyfile
 
 volumes:
   db-data:
