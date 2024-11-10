@@ -85,35 +85,36 @@ To parse `X-Forwarded-For` GoHunt also needs to be configured with how many prox
 ## Environment variables
 
 Here is the list of environment variables that gohunt takes. 
-Please read the `Using config file` section for each environment variable purpose.
+Please read the `Using config file` section for each environment variable purpose, or use `./gohunt -h`
 
-`Domain`  
-`ListenAddress`  
-`NumberProxies`  
-`Features.Signup.Enabled`  
-`Features.Oidc.Enabled`  
-`Features.Oidc.PublicURL`  
-`Features.Oidc.IssuerURL`  
-`Features.Oidc.ClientID`  
-`Features.Oidc.ClientSecret`  
-`Features.Oidc.AdminGroupClaimName`  
-`Features.Oidc.AdminGroup`  
-`Notification.SMTP.Enabled`  
-`Notification.SMTP.Host`  
-`Notification.SMTP.Port`  
-`Notification.SMTP.Username`  
-`Notification.SMTP.Password`  
-`Notification.SMTP.FromEmail`  
-`Notification.Webhooks.Enabled`  
-`Notification.Webhooks.SafeDomains`  
-`Notification.Confidential`  
-`Database.Host`  
-`Database.Port`  
-`Database.User`  
-`Database.DBname`  
-`Database.SSLmode`  
-`Database.Password`  
-
+```
+Domain
+ListenAddress
+NumberProxies
+Features_Signup_Enabled
+Features_Oidc_Enabled
+Features_Oidc_PublicURL
+Features_Oidc_IssuerURL
+Features_Oidc_ClientID
+Features_Oidc_ClientSecret
+Features_Oidc_AdminGroupClaimName
+Features_Oidc_AdminGroup
+Notification_SMTP_Enabled
+Notification_SMTP_Host
+Notification_SMTP_Port
+Notification_SMTP_Username
+Notification_SMTP_Password
+Notification_SMTP_FromEmail
+Notification_Webhooks_Enabled
+Notification_Webhooks_SafeDomains
+Notification_Confidential
+Database_Host
+Database_Port
+Database_User
+Database_DBname
+Database_SSLmode
+Database_Password
+```
 
 ## Using config file
 

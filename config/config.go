@@ -1,173 +1,54 @@
 package config
 
-import (
-	"fmt"
-	"log"
-	"os"
-	"reflect"
-	"strconv"
-	"strings"
-
-	"gopkg.in/yaml.v2"
-)
-
 // Config holds the application settings
 type Config struct {
-	Domain        string `yaml:"domain"`
-	ListenAddress string `yaml:"listen_address"`
+	Domain        string `confy_description:"Your gohunt instance domain (add port if not default 443/80)"`
+	ListenAddress string `confy_description:"The ip:port combination start the golang http server on"`
 
 	// Used to parse xff
-	NumberProxies int `yaml:"number_proxies"`
+	NumberProxies int `confy_description:"Used to parse X-Forwarded-For"`
 
 	Features struct {
 		Signup struct {
-			Enabled bool `yaml:"enabled"`
+			Enabled bool `confy_description:"Enable or disable account creation"`
 		}
 
 		Oidc struct {
-			Enabled             bool   `yaml:"enabled"`
-			PublicURL           string `yaml:"public_url"`
-			IssuerURL           string `yaml:"issuer_url"`
-			ClientID            string `yaml:"client_id"`
-			ClientSecret        string `yaml:"client_secret" sensitive:"yes"`
-			AdminGroupClaimName string `yaml:"admin_group_claim_name"`
-			AdminGroup          string `yaml:"admin_group_name"`
+			Enabled             bool   `confy_description:"Enable or disable OIDC SSO integration"`
+			PublicURL           string `confy_description:"URL of Gohunt instance (option can be determined from domain)"`
+			IssuerURL           string `confy_description:"Identity provider URL"`
+			ClientID            string `confy_description:"OIDC Client ID"`
+			ClientSecret        string `confy:";sensitive" confy_description:"OIDC Client Secret"`
+			AdminGroupClaimName string `confy_description:"Claim with user groups in it (optional)"`
+			AdminGroup          string `confy_description:"Group that indicates user should be administrator of instance (optional)"`
 		}
 	}
 
 	Notification struct {
 		SMTP struct {
-			Enabled bool `yaml:"enabled"`
+			Enabled bool `confy_description:"Enable or disable sending notifications via SMTP"`
 
-			Host      string `yaml:"host"`
-			Port      int    `yaml:"port"`
-			Username  string `yaml:"username"`
-			Password  string `yaml:"password" sensitive:"yes"`
-			FromEmail string `yaml:"from"`
+			Host      string `confy_description:"Host domain/ip"`
+			Port      int    `confy_description:"Port"`
+			Username  string `confy_description:"Mailing username"`
+			Password  string `confy:";sensitive" confy_description:"Mailing password"`
+			FromEmail string `confy_description:"The sending email address"`
 		}
 
 		Webhooks struct {
-			Enabled     bool     `yaml:"enabled"`
-			SafeDomains []string `yaml:"safe_domains"`
+			Enabled     bool     `confy_description:"Enable or disable sending notifications via webhooks"`
+			SafeDomains []string `confy_description:"List of domains that are safe to send to, defaults to [discord.com, slack.com]"`
 		}
 
-		Confidential bool `yaml:"confidential"`
+		Confidential bool `confy_description:"Whether to add xss vulnerablity details to notification"`
 	}
 
 	Database struct {
-		Host     string `yaml:"host"`
-		Port     string `yaml:"port"`
-		User     string `yaml:"user"`
-		DBname   string `yaml:"dbname"`
-		SSLmode  string `yaml:"sslmode"`
-		Password string `yaml:"password" sensitive:"yes"`
+		Host     string `confy_description:"Host domain/ip"`
+		Port     string `confy_description:"Port"`
+		User     string `confy_description:"Database user"`
+		DBname   string `confy_description:"Database user password"`
+		SSLmode  string `confy_description:"Which database to use"`
+		Password string `confy:";sensitive" confy_description:"postgres sslmode"`
 	}
-}
-
-type fieldDescription struct {
-	Name      string
-	Sensitive bool
-}
-
-func listFields(v interface{}) []fieldDescription {
-	var fields []fieldDescription
-	t := reflect.TypeOf(v).Elem()
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		fieldName := field.Name
-
-		if field.Type.Kind() == reflect.Struct {
-			subFields := listFields(reflect.New(field.Type).Interface())
-			for _, subField := range subFields {
-				fields = append(fields, fieldDescription{Name: fmt.Sprintf("%s.%s", fieldName, subField.Name), Sensitive: subField.Sensitive})
-			}
-		} else {
-			value, _ := field.Tag.Lookup("sensitive")
-			fields = append(fields, fieldDescription{Name: fieldName, Sensitive: (value == "true" || value == "yes")})
-		}
-	}
-	return fields
-}
-
-func setField(v interface{}, fieldPath string, value string) {
-	r := reflect.ValueOf(v).Elem()
-	parts := strings.Split(fieldPath, ".")
-
-	for i, part := range parts {
-		if i == len(parts)-1 {
-			f := r.FieldByName(part)
-			if f.IsValid() {
-				switch f.Kind() {
-				case reflect.Bool:
-					f.SetBool(value == "true")
-				case reflect.Slice:
-					f.Set(reflect.ValueOf(strings.Split(value, ",")))
-				case reflect.String:
-					f.SetString(value)
-				case reflect.Int:
-
-					reflectedVal, err := strconv.Atoi(value)
-					if err != nil {
-						log.Println(fieldPath, " should be int, but couldnt be parsed as one: ", err)
-						continue
-					}
-					f.SetInt(int64(reflectedVal))
-
-				default:
-					log.Printf("Unsupported field type for field: %s", fieldPath)
-				}
-			} else {
-				log.Printf("Field not found: %s", fieldPath)
-			}
-		} else {
-			r = r.FieldByName(part)
-		}
-	}
-}
-
-func LoadConfig(path string) (c Config, err error) {
-	c.Notification.Webhooks.SafeDomains = []string{"discord.com", "slack.com"}
-
-	// Load configuration
-	configFile, err := os.Open(path)
-	if err != nil {
-
-		fields := listFields(&c)
-		setSomething := false
-		for _, field := range fields {
-			envVariable := os.Getenv(field.Name)
-
-			printedValue := envVariable
-			if field.Sensitive && envVariable != "" {
-				printedValue = "**********"
-			}
-
-			fmt.Printf("%s=%s\n", field.Name, printedValue)
-
-			if envVariable != "" {
-				setSomething = true
-				setField(&c, field.Name, envVariable)
-			}
-		}
-
-		if setSomething {
-			err = nil
-			return
-		}
-
-		err = fmt.Errorf("error reading config.yaml, have you created one? Error: %s", err)
-		return
-
-	}
-	defer configFile.Close()
-
-	decoder := yaml.NewDecoder(configFile)
-	decoder.SetStrict(false)
-	err = decoder.Decode(&c)
-	if err != nil {
-		err = fmt.Errorf("error decoding config: %s", err)
-		return
-	}
-
-	return
 }

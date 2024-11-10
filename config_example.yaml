@@ -1,0 +1,37 @@
+Domain: localhost:8081
+ListenAddress: 127.0.0.1:8081
+NumberProxies: 0
+
+Features:
+  Signup:
+    Enabled: true
+  Oidc: 
+    Enabled: false
+    PublicURL: http://localhost:8081/
+    IssuerURL: http://localhost:8080/realms/Test
+    ClientID: gohunt
+    ClientSecret: O7rzlwcetxu4M135KeqOXDGCqDCbObMB
+    AdminGroupClaimName: groups 
+    AdminGroup: gohunt_adm
+
+Notification:
+  Confidential: false
+  SMTP:
+    Enabled: false
+    FromEmail: no-reply@example.com
+    Host: mail.example.com
+    Port: 587
+    Username: 
+    Password: 
+  Webhooks:
+    Enabled: true
+
+Database:
+  Password: gohunt
+  User: gohunt
+  DBname: gohunt
+  Host: 127.0.0.1
+  Port: 5432
+  SSLmode: disable
+
+

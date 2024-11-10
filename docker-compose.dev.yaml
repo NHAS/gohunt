@@ -26,14 +26,14 @@ services:
       # Settings that can be configured either from the docker env, or config file
       - Domain=${DOMAIN}
       - ListenAddress=:8081
-      - Features.Signup.Enabled=true
-      - Notification.Webhooks.Enabled=true
-      - Database.Host=postgres
-      - Database.Port=5432
-      - Database.User=${GOHUNT_DB_USERNAME:-gohunt}
-      - Database.DBname=gohunt
-      - Database.SSLmode=disable
-      - Database.Password=gohunt
+      - Features_Signup_Enabled=true
+      - Notification_Webhooks_Enabled=true
+      - Database_Host=postgres
+      - Database_Port=5432
+      - Database_User=${GOHUNT_DB_USERNAME:-gohunt}
+      - Database_DBname=gohunt
+      - Database_SSLmode=disable
+      - Database_Password=gohunt
     ports:
       - 8081:8081
 

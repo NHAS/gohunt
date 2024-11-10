@@ -26,14 +26,14 @@ services:
       - Domain=${DOMAIN}
       - ListenAddress=:8081
       - NumberProxies=1
-      - Features.Signup.Enabled=true
-      - Notification.Webhooks.Enabled=true
-      - Database.Host=postgres
-      - Database.Port=5432
-      - Database.User=${GOHUNT_DB_USERNAME:-gohunt}
-      - Database.DBname=gohunt
-      - Database.SSLmode=disable
-      - Database.Password=${DB_PASSWORD}
+      - Features_Signup_Enabled=true
+      - Notification_Webhooks_Enabled=true
+      - Database_Host=postgres
+      - Database_Port=5432
+      - Database_User=${GOHUNT_DB_USERNAME:-gohunt}
+      - Database_DBname=gohunt
+      - Database_SSLmode=disable
+      - Database_Password=${DB_PASSWORD}
 
   caddy:
     depends_on: 
