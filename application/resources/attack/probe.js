@@ -196,7 +196,7 @@ try {
 }
 
 try {
-    probe_return_data['local_storage'] = JSON.stringify(localStorage)
+    probe_return_data['local_storage'] = JSON.stringify(localStorage, null, 2)
 } catch(e) {
     probe_return_data['local_storage'] = ''
 }
