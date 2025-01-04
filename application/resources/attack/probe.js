@@ -195,6 +195,12 @@ try {
     probe_return_data['injection_key'] = '';
 }
 
+try {
+    probe_return_data['local-storage'] = JSON.stringify(localStorage)
+} catch(e) {
+    probe_return_data['local-storage'] = ''
+}
+
 function hook_load_if_not_ready() {
     try {
         probe_return_data['dom'] = never_null( document.documentElement.outerHTML );
