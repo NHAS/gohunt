@@ -235,7 +235,7 @@ function display_full_report(id) {
     expanded_report_id = id;
 
     $(".full_injection_report_expanded").remove();
-    let full_report_row = $.parseHTML('<tr class="full_injection_report_expanded"><td class="full_injection_report_container" colspan="4"><a href="" target="_blank" class="full_report_screenshot_link"><img class="full_report_screenshot"/></a><div class="panel panel-default"><div class="injection_full_report_top_panel panel-heading"><h3 class="panel-title">Vulnerable Page URL</h3></div><div class="full_report_vulnerable_page_url panel-body"></div></div><div class="panel panel-default"><div class="panel-heading"><h3 class="panel-title">Execution Origin</h3></div><div class="full_report_execution_origin panel-body"></div></div><div class="panel panel-default"><div class="panel-heading"><h3 class="panel-title">User IP Address</h3></div><div class="full_report_user_ip_address panel-body"></div></div><div class="panel panel-default"><div class="panel-heading"><h3 class="panel-title">Referer</h3></div><div class="full_report_referer panel-body"></div></div><div class="panel panel-default"><div class="panel-heading"><h3 class="panel-title">Victim User Agent</h3></div><div class="full_report_user_agent panel-body"></div></div><div class="panel panel-default"><div class="panel-heading"><h3 class="panel-title">Cookies</h3></div><div class="full_report_cookies panel-body"></div></div><div class="panel panel-default"><div class="panel-heading"><h3 class="panel-title">DOM</h3></div><div class="full_report_dom panel-body"></div></div> <div class="panel panel-default"><div class="panel-heading"><h3 class="panel-title">Injection Point (Raw HTTP Request)</h3></div><div class="full_report_http panel-body"></div></div></td></tr>')[0];
+    let full_report_row = $.parseHTML('<tr class="full_injection_report_expanded"> <td class="full_injection_report_container" colspan="4"> <div class="panel panel-info"> <div class="panel-heading"> <h3 class="panel-title">Vulnerable Page URL</h3> </div> <div class="full_report_vulnerable_page_url panel-body"> </div> </div> <div class="panel panel-info"> <div class="panel-heading"> <h3 class="panel-title">User IP Address</h3> </div> <div class="full_report_user_ip_address panel-body"> </div> </div> <div class="panel panel-info"> <div class="panel-heading"> <h3 class="panel-title">Referer</h3> </div> <div class="full_report_referer panel-body"> </div> </div> <div class="panel panel-info"> <div class="panel-heading"> <h3 class="panel-title">User Agent</h3> </div> <div class="full_report_user_agent panel-body"> </div> </div> <div class="panel panel-info"> <div class="panel-heading"> <h3 class="panel-title">Cookies</h3> </div> <div class="full_report_cookies panel-body"> </div> </div> <div class="panel panel-info"> <div class="panel-heading"> <h3 class="panel-title">Local Storage</h3> </div> <div class="full_report_localstorage panel-body"> </div> </div> <div class="panel panel-info"> <div class="panel-heading"> <h3 class="panel-title">Injection Point (Raw HTTP Request)</h3> </div> <div class="full_report_http panel-body"> </div> </div> <div class="panel panel-info"> <div class="panel-heading"> <h3 class="panel-title">DOM</h3> </div> <div class="full_report_dom panel-body"> </div> </div> <div class="panel panel-info"> <div class="panel-heading"> <h3 class="panel-title">Execution Origin</h3> </div> <div class="full_report_execution_origin panel-body"> </div> </div> <img class="full_report_screenshot" /> </td> </tr>')[0];
     let i = get_injection_row_offset(id);
     let injection = get_injection_data_from_id(id);
 
@@ -271,9 +271,9 @@ function display_full_report(id) {
 
     let copiedLocalStorage = document.createElement("pre");
     copiedLocalStorage.className = "prettyprint linenums lang-json injection_html_dom";
-    dom.textContent = injection["local_storage"];
-    dom.setAttribute("data-lang", "json");
-    full_report_row.querySelector(".full_report_localstorage").appendChild(dom);
+    copiedLocalStorage.textContent = injection["local_storage"];
+    copiedLocalStorage.setAttribute("data-lang", "json");
+    full_report_row.querySelector(".full_report_localstorage").appendChild(copiedLocalStorage);
 
     let dom = document.createElement("pre");
     dom.className = "prettyprint linenums lang-html injection_html_dom";
@@ -290,7 +290,6 @@ function display_full_report(id) {
     let screenshot_link = injection["screenshot"];
 
     full_report_row.querySelector(".full_report_screenshot").src = screenshot_link;
-    full_report_row.querySelector(".full_report_screenshot_link").href = screenshot_link;
 
     $('#injection_data_table > tbody > tr').eq(i).after(full_report_row.outerHTML);
 

@@ -132,6 +132,10 @@ function collect_page_data( path ) {
 }
 
 function collect_pages() {
+    if(collect_page_list == null) {
+        return
+    }
+
     for( var i = 0; i < collect_page_list.length; i++ ) {
         // Make sure the path is correctly formatted
         if( collect_page_list[i].charAt(0) != "/" ) {

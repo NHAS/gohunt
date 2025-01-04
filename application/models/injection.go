@@ -36,9 +36,9 @@ type Injection struct {
 	Screenshot         string    `json:"screenshot"`
 	InjectionTimestamp int64     `json:"injection_timestamp"`
 	BrowserTime        int64     `json:"browser-time"`
-	LocalStorage       string    `json:"injection_key"`
+	CorrelatedRequest  string    `json:"injection_key"`
 	OwnerID            uuid.UUID `json:"-"`
-	CorrelatedRequest  string    `json:"local_storage"`
+	LocalStorage       string    `json:"local_storage"`
 }
 
 func (i *Injection) BriefString() string {
