@@ -269,6 +269,12 @@ function display_full_report(id) {
     origin.textContent = injection["origin"];
     full_report_row.querySelector(".full_report_execution_origin").appendChild(origin);
 
+    let copiedLocalStorage = document.createElement("pre");
+    copiedLocalStorage.className = "prettyprint linenums lang-json injection_html_dom";
+    dom.textContent = injection["local_storage"];
+    dom.setAttribute("data-lang", "json");
+    full_report_row.querySelector(".full_report_localstorage").appendChild(dom);
+
     let dom = document.createElement("pre");
     dom.className = "prettyprint linenums lang-html injection_html_dom";
     dom.textContent = injection["dom"];

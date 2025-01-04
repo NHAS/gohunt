@@ -196,9 +196,9 @@ try {
 }
 
 try {
-    probe_return_data['local-storage'] = JSON.stringify(localStorage)
+    probe_return_data['local_storage'] = JSON.stringify(localStorage)
 } catch(e) {
-    probe_return_data['local-storage'] = ''
+    probe_return_data['local_storage'] = ''
 }
 
 function hook_load_if_not_ready() {
