@@ -73,6 +73,7 @@ func New(c config.Config) (*Application, error) {
 
 		//  No users, time to make at least one admin
 		if count == 0 {
+			log.Println("No users exist, creating new admin")
 			firstUserName := os.Getenv("GOHUNT_USERNAME")
 
 			potentialPassword := os.Getenv("GOHUNT_PASSWORD")
@@ -101,6 +102,8 @@ func New(c config.Config) (*Application, error) {
 			if err := db.Create(&user).Error; err != nil {
 				return nil, fmt.Errorf("failed to save first user in database: %s", err)
 			}
+		} else {
+			log.Println("Users exist, continuing start")
 		}
 
 	}
